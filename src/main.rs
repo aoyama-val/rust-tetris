@@ -87,7 +87,6 @@ fn render(canvas: &mut Canvas<Window>, game: &Game) -> Result<(), String> {
         canvas.fill_rect(Rect::new(x as i32, y as i32, CELL_SIZE_PX, CELL_SIZE_PX))?;
     }
 
-
     canvas.present();
 
     Ok(())
@@ -99,8 +98,8 @@ struct PosInCell {
 }
 
 impl PosInCell {
-    fn new() -> PosInCell {
-        PosInCell { x: 0, y: 0 }
+    fn new(x: i32, y: i32) -> PosInCell {
+        PosInCell { x, y }
     }
 }
 
@@ -201,7 +200,7 @@ struct Block {
 impl Block {
     fn new() -> Block {
         Block {
-            pos: PosInCell::new(),
+            pos: PosInCell::new(12, 0),
             shape: Shape::S0,
             rot: 0,
             color: 0,
@@ -242,6 +241,17 @@ impl Block {
     }
 
     fn move_by_delta(&mut self, x_delta: i32, y_delta: i32) {
+        let pattern = self.get_pattern();
+        for i in 0..5 {
+            for j in 0..5 {
+                if pattern[i][j] != 0 {
+                    let new_pos = self.pos.x + j as i32 + x_delta;
+                    if new_pos <= 6 || new_pos >= 18 {
+                        return
+                    }
+                }
+            }
+        }
         self.pos.x += x_delta;
         self.pos.y += y_delta;
     }
