@@ -240,17 +240,24 @@ impl Block {
         self.rot = (self.rot + 1) % 4;
     }
 
-    fn move_by_delta(&mut self, x_delta: i32, y_delta: i32) {
+    fn is_collide(&mut self, x_delta: i32, y_delta: i32) -> bool {
         let pattern = self.get_pattern();
         for i in 0..5 {
             for j in 0..5 {
                 if pattern[i][j] != 0 {
                     let new_pos = self.pos.x + j as i32 + x_delta;
                     if new_pos <= 6 || new_pos >= 18 {
-                        return
+                        return true
                     }
                 }
             }
+        }
+        false
+    }
+
+    fn move_by_delta(&mut self, x_delta: i32, y_delta: i32) {
+        if self.is_collide(x_delta, y_delta) {
+            return
         }
         self.pos.x += x_delta;
         self.pos.y += y_delta;
