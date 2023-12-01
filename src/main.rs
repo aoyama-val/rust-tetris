@@ -13,7 +13,7 @@ use std::time::Duration;
 
 const SCREEN_WIDTH: u32 = 640;
 const SCREEN_HEIGHT: u32 = 420;
-const CELL_SIZE_PX: u32 = 20;
+const FPS: u32 = 30;
 
 pub fn main() -> Result<(), String> {
     let sdl_context = sdl2::init()?;
@@ -31,6 +31,7 @@ pub fn main() -> Result<(), String> {
     let mut game = Game::new(rng);
 
     'running: loop {
+        let mut command = "";
         for event in event_pump.poll_iter() {
             match event {
                 Event::Quit { .. }
@@ -41,12 +42,22 @@ pub fn main() -> Result<(), String> {
                 Event::KeyDown {
                     keycode: Some(code),
                     ..
-                } => game.update(code),
+                } => {
+                    command = match code {
+                        Keycode::Left => "left",
+                        Keycode::Right => "right",
+                        Keycode::Down => "down",
+                        Keycode::Z => "rotate_left",
+                        Keycode::X => "rotate_right",
+                        _ => "",
+                    };
+                },
                 _ => {}
             }
         }
+        game.update(command);
         render(&mut canvas, &game)?;
-        ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 30));
+        ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / FPS));
     }
 
     Ok(())
@@ -56,7 +67,20 @@ fn render(canvas: &mut Canvas<Window>, game: &Game) -> Result<(), String> {
     canvas.set_draw_color(Color::RGB(0, 0, 0));
     canvas.clear();
 
+    const CELL_SIZE_PX: u32 = 20;
     const LEFT_WALL_X: i32 = 6;
+
+    // render piles
+    canvas.set_draw_color(Color::RGB(128, 128, 128));
+    for i in 0..(game.piles.pattern.len()) {
+        for j in 0..(game.piles.pattern[i].len()) {
+            if game.piles.pattern[i][j] == 1 {
+                let x: i32 = (LEFT_WALL_X + j as i32) as i32 * CELL_SIZE_PX as i32;
+                let y: i32 = i as i32 * CELL_SIZE_PX as i32;
+                canvas.fill_rect(Rect::new(x, y, CELL_SIZE_PX, CELL_SIZE_PX))?;
+            }
+        }
+    }
 
     // render block
     let block_color = match game.block.color {
@@ -72,18 +96,6 @@ fn render(canvas: &mut Canvas<Window>, game: &Game) -> Result<(), String> {
             if pattern[j][i] == 1 {
                 let x = ((LEFT_WALL_X + game.block.pos.x + i as i32) * CELL_SIZE_PX as i32) as i32;
                 let y = ((game.block.pos.y + j as i32) * CELL_SIZE_PX as i32) as i32;
-                canvas.fill_rect(Rect::new(x, y, CELL_SIZE_PX, CELL_SIZE_PX))?;
-            }
-        }
-    }
-
-    // render piles
-    canvas.set_draw_color(Color::RGB(128, 128, 128));
-    for i in 0..(game.piles.pattern.len()) {
-        for j in 0..(game.piles.pattern[i].len()) {
-            if game.piles.pattern[i][j] == 1 {
-                let x: i32 = (LEFT_WALL_X + j as i32) as i32 * CELL_SIZE_PX as i32;
-                let y: i32 = i as i32 * CELL_SIZE_PX as i32;
                 canvas.fill_rect(Rect::new(x, y, CELL_SIZE_PX, CELL_SIZE_PX))?;
             }
         }
@@ -202,7 +214,7 @@ struct Block {
 impl Block {
     fn new() -> Block {
         Block {
-            pos: PosInCell::new(4, 0),
+            pos: PosInCell::new(0, 0),
             shape: Shape::S0,
             rot: 0,
             color: 0,
@@ -249,6 +261,7 @@ impl Block {
 
     fn create_randomly(rng: &mut ThreadRng) -> Block {
         let mut block = Block::new();
+        block.pos = PosInCell::new(4, 0);
         block.shape = Shape::from_i32(rng.gen_range(0..=Shape::max()));
         block.color = rng.gen_range(0..=2);
         block
@@ -281,11 +294,12 @@ impl Piles {
     }
 }
 
-// ゲームのモデル。できればSDLに依存しないようにしたい
+// ゲームのモデル。SDLに依存しない。
 struct Game {
     block: Block,
     piles: Piles,
     rng: ThreadRng,
+    frame: i32,
 }
 
 impl Game {
@@ -294,22 +308,29 @@ impl Game {
             block: Block::new(),
             piles: Piles::new(),
             rng: rng,
+            frame: 0,
         };
         game.piles.setup_wall_and_floor();
         game.set_next_block();
         game
     }
 
-    fn update(&mut self, keycode: Keycode) {
-        match keycode {
-            Keycode::Right => self.move_by_delta(1, 0),
-            Keycode::Left => self.move_by_delta(-1, 0),
-            Keycode::Down => self.move_by_delta(0, 1),
-            Keycode::Z => self.block.rotate_left(),
-            Keycode::X => self.block.rotate_right(),
+    fn update(&mut self, command: &str) {
+        match command {
+            "right" => self.move_by_delta(1, 0),
+            "left" => self.move_by_delta(-1, 0),
+            "down" => self.move_by_delta(0, 1),
+            "rotate_left" => self.block.rotate_left(),
+            "rotate_right" => self.block.rotate_right(),
             // Keycode::A => self.set_next_block(),
             _ => {}
         }
+
+        if self.frame != 0 && self.frame % 10 == 0 {
+            self.move_by_delta(0, 1);
+        }
+
+        self.frame += 1;
     }
 
     fn is_collide(&mut self, x_delta: i32, y_delta: i32) -> bool {
@@ -336,7 +357,6 @@ impl Game {
 
         // 床に接触した
         if y_delta > 0 && self.is_collide(0, 1) {
-            println!("bottom!");
             for i in 0..5 {
                 for j in 0..5 {
                     let block_pattern = self.block.get_pattern();
