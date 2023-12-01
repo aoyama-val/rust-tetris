@@ -204,6 +204,11 @@ impl Block {
         self.rot = (self.rot + 1) % 4;
     }
 
+    fn move_by_delta(&mut self, x_delta: i32, y_delta: i32) {
+        self.pos.x += x_delta;
+        self.pos.y += y_delta;
+    }
+
     fn create_randomly(rng: &mut ThreadRng) -> Block {
         let mut block = Block::new();
         block.shape = Shape::from_i32(rng.gen_range(0..=Shape::max()));
@@ -231,10 +236,10 @@ impl Game {
     fn update(&mut self, keycode: Keycode) {
         // println!("key pressed: {}", keycode);
         match keycode {
-            Keycode::Right => self.block.pos.x += 1,
-            Keycode::Left => self.block.pos.x -= 1,
-            Keycode::Up => self.block.pos.y -= 1,
-            Keycode::Down => self.block.pos.y += 1,
+            Keycode::Right => self.block.move_by_delta(1, 0),
+            Keycode::Left => self.block.move_by_delta(-1, 0),
+            Keycode::Up => self.block.move_by_delta(0, -1),
+            Keycode::Down => self.block.move_by_delta(0, 1),
             Keycode::Z => self.block.rotate_left(),
             Keycode::X => self.block.rotate_right(),
             _ => {}
