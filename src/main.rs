@@ -202,7 +202,7 @@ struct Block {
 impl Block {
     fn new() -> Block {
         Block {
-            pos: PosInCell::new(6, 0),
+            pos: PosInCell::new(4, 0),
             shape: Shape::S0,
             rot: 0,
             color: 0,
@@ -304,11 +304,10 @@ impl Game {
         match keycode {
             Keycode::Right => self.move_by_delta(1, 0),
             Keycode::Left => self.move_by_delta(-1, 0),
-            Keycode::Up => self.move_by_delta(0, -1),
             Keycode::Down => self.move_by_delta(0, 1),
             Keycode::Z => self.block.rotate_left(),
             Keycode::X => self.block.rotate_right(),
-            Keycode::A => self.set_next_block(),
+            // Keycode::A => self.set_next_block(),
             _ => {}
         }
     }
@@ -334,6 +333,23 @@ impl Game {
             return
         }
         self.block.move_by_delta(x_delta, y_delta);
+
+        // 床に接触した
+        if y_delta > 0 && self.is_collide(0, 1) {
+            println!("bottom!");
+            for i in 0..5 {
+                for j in 0..5 {
+                    let block_pattern = self.block.get_pattern();
+                    if block_pattern[i][j] == 1 {
+                        self.piles.pattern[(self.block.pos.y + i as i32) as usize][(self.block.pos.x + j as i32) as usize] = 1;
+                    }
+                }
+            }
+            self.set_next_block();
+            if self.is_collide(0, 0) {
+                println!("Game over!");
+            }
+        }
     }
 
     fn set_next_block(&mut self) {
