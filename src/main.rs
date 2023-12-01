@@ -14,7 +14,6 @@ use std::time::Duration;
 const SCREEN_WIDTH: u32 = 640;
 const SCREEN_HEIGHT: u32 = 420;
 const CELL_SIZE_PX: u32 = 20;
-const BACKGROUND_COLOR: Color = Color::RGB(128, 128, 128);
 
 pub fn main() -> Result<(), String> {
     let sdl_context = sdl2::init()?;
@@ -54,7 +53,7 @@ pub fn main() -> Result<(), String> {
 }
 
 fn render(canvas: &mut Canvas<Window>, game: &Game) -> Result<(), String> {
-    canvas.set_draw_color(BACKGROUND_COLOR);
+    canvas.set_draw_color(Color::RGB(0, 0, 0));
     canvas.clear();
 
     let block_color = match game.block.color {
@@ -74,6 +73,20 @@ fn render(canvas: &mut Canvas<Window>, game: &Game) -> Result<(), String> {
             }
         }
     }
+
+    // render wall
+    canvas.set_draw_color(Color::RGB(128, 128, 128));
+    for i in 0..21 {
+        let y = (20 - i) * CELL_SIZE_PX;
+        canvas.fill_rect(Rect::new(6 * CELL_SIZE_PX as i32, y as i32, CELL_SIZE_PX, CELL_SIZE_PX))?;
+        canvas.fill_rect(Rect::new(18 * CELL_SIZE_PX as i32, y as i32, CELL_SIZE_PX, CELL_SIZE_PX))?;
+    }
+    for i in 0..12 {
+        let x = (6 + i) * CELL_SIZE_PX;
+        let y = 20 * CELL_SIZE_PX;
+        canvas.fill_rect(Rect::new(x as i32, y as i32, CELL_SIZE_PX, CELL_SIZE_PX))?;
+    }
+
 
     canvas.present();
 
