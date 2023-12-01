@@ -15,34 +15,6 @@ const SCREEN_WIDTH: u32 = 640;
 const SCREEN_HEIGHT: u32 = 420;
 const CELL_SIZE_PX: u32 = 20;
 const BACKGROUND_COLOR: Color = Color::RGB(128, 128, 128);
-const BOX_COLOR: Color = Color::RGB(255, 128, 128);
-
-// SCREEN_WIDTH = 640
-// SCREEN_HEIGHT = 420
-// CELL_SIZE_PX = 20
-// BACKGROUND_COLOR = [0, 0, 0]
-// WALL_COLOR = [128, 128, 128]
-// BLOCK_COLORS = [
-//   [255, 0, 0],
-//   [0, 255, 0],
-//   [0, 0, 255],
-//   [255, 255, 0],
-//   [0, 255, 255],
-//   [255, 0, 255],
-// ]
-// WALL_X = 5
-// WALL_Y = 0
-
-// define_key SDL::Key::ESCAPE, :exit
-// define_key SDL::Key::LEFT, :left
-// define_key SDL::Key::RIGHT, :right
-// define_key SDL::Key::UP, :up
-// define_key SDL::Key::DOWN, :down
-// define_key SDL::Key::Z, :rotate_left
-// define_key SDL::Key::X, :rotate_right
-// define_key SDL::Key::F5, :reload
-// define_key SDL::Key::RETURN, :ok
-// define_pad_button 0, :ok
 
 pub fn main() -> Result<(), String> {
     let sdl_context = sdl2::init()?;
@@ -126,11 +98,12 @@ enum Shape {
     S3,
     S4,
     S5,
+    S6,
 }
 
 impl Shape {
     fn max() -> i32 {
-        5
+        6
     }
 }
 
@@ -143,6 +116,7 @@ impl Shape {
             3 => Shape::S3,
             4 => Shape::S4,
             5 => Shape::S5,
+            6 => Shape::S6,
             _ => panic!("Unknown value for Shape: {}", n),
         }
     }
@@ -165,16 +139,59 @@ impl Block {
     }
 
     fn get_pattern(&self) -> [[u8; 5]; 5] {
-        // TODO: self.shapeで場合分け
-        let mut base: [[u8; 5]; 5] = [
-            [0, 0, 0, 0, 0],
-            [0, 0, 1, 0, 0],
-            [0, 1, 1, 1, 0],
-            [0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0],
-        ];
+        let base: [[u8; 5]; 5] = match self.shape {
+            Shape::S0 => [
+                [0, 0, 0, 0, 0],
+                [0, 0, 1, 0, 0],
+                [0, 0, 1, 0, 0],
+                [0, 0, 1, 0, 0],
+                [0, 0, 1, 0, 0],
+            ],
+            Shape::S1 => [
+                [0, 0, 0, 0, 0],
+                [0, 0, 1, 0, 0],
+                [0, 0, 1, 0, 0],
+                [0, 0, 1, 1, 0],
+                [0, 0, 0, 0, 0],
+            ],
+            Shape::S2 => [
+                [0, 0, 0, 0, 0],
+                [0, 0, 1, 0, 0],
+                [0, 0, 1, 0, 0],
+                [0, 1, 1, 0, 0],
+                [0, 0, 0, 0, 0],
+            ],
+            Shape::S3 => [
+                [0, 0, 0, 0, 0],
+                [0, 0, 1, 1, 0],
+                [0, 0, 1, 1, 0],
+                [0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0],
+            ],
+            Shape::S4 => [
+                [0, 0, 0, 0, 0],
+                [0, 0, 1, 0, 0],
+                [0, 1, 1, 1, 0],
+                [0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0],
+            ],
+            Shape::S5 => [
+                [0, 0, 0, 0, 0],
+                [0, 0, 1, 1, 0],
+                [0, 1, 1, 0, 0],
+                [0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0],
+            ],
+            Shape::S6 => [
+                [0, 0, 0, 0, 0],
+                [0, 1, 1, 0, 0],
+                [0, 0, 1, 1, 0],
+                [0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0],
+            ],
+        };
         let mut result = base;
-        for n in 0..self.rot {
+        for _ in 0..self.rot {
             result = Self::rotate_pattern(result);
         }
         match self.rot {
@@ -234,7 +251,6 @@ impl Game {
     }
 
     fn update(&mut self, keycode: Keycode) {
-        // println!("key pressed: {}", keycode);
         match keycode {
             Keycode::Right => self.block.move_by_delta(1, 0),
             Keycode::Left => self.block.move_by_delta(-1, 0),
@@ -242,16 +258,10 @@ impl Game {
             Keycode::Down => self.block.move_by_delta(0, 1),
             Keycode::Z => self.block.rotate_left(),
             Keycode::X => self.block.rotate_right(),
+            Keycode::A => self.set_next_block(),
             _ => {}
         }
     }
-
-    // fn create_next_block(&mut self) -> Block {
-    //     let mut block = Block::new();
-    //     block.shape = Shape::from_i32(self.rng.gen_range(0..=Shape::max()));
-    //     block.color = self.rng.gen_range(0..=2);
-    //     block
-    // }
 
     fn set_next_block(&mut self) {
         self.block = Block::create_randomly(&mut self.rng);
