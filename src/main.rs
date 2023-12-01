@@ -165,21 +165,35 @@ impl Block {
     }
 
     fn get_pattern(&self) -> [[u8; 5]; 5] {
-        // TODO: 実装
-        let base = [
+        // TODO: self.shapeで場合分け
+        let mut base: [[u8; 5]; 5] = [
             [0, 0, 0, 0, 0],
             [0, 0, 1, 0, 0],
             [0, 1, 1, 1, 0],
             [0, 0, 0, 0, 0],
             [0, 0, 0, 0, 0],
         ];
+        let mut result = base;
+        for n in 0..self.rot {
+            result = Self::rotate_pattern(result);
+        }
         match self.rot {
-            0 => base,
-            1 => base,
-            2 => base,
-            3 => base,
+            0 => result,
+            1 => result,
+            2 => result,
+            3 => result,
             _ => panic!(),
         }
+    }
+
+    fn rotate_pattern(base: [[u8; 5]; 5]) -> [[u8; 5]; 5] {
+        let mut result: [[u8; 5]; 5] = [[0; 5]; 5];
+        for i in 0..5 {
+            for j in 0..5 {
+                result[4 - j][i] = base[i][j];
+            }
+        }
+        result
     }
 
     fn rotate_right(&mut self) {
@@ -221,6 +235,8 @@ impl Game {
             Keycode::Left => self.block.pos.x -= 1,
             Keycode::Up => self.block.pos.y -= 1,
             Keycode::Down => self.block.pos.y += 1,
+            Keycode::Z => self.block.rotate_left(),
+            Keycode::X => self.block.rotate_right(),
             _ => {}
         }
     }
