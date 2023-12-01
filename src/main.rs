@@ -1,12 +1,15 @@
+extern crate rand;
 extern crate sdl2;
 
-use std::time::Duration;
+use rand::rngs::ThreadRng;
+use rand::Rng;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
 use sdl2::rect::Rect;
 use sdl2::render::Canvas;
 use sdl2::video::Window;
+use std::time::Duration;
 
 const SCREEN_WIDTH: u32 = 640;
 const SCREEN_HEIGHT: u32 = 420;
@@ -41,8 +44,6 @@ const BOX_COLOR: Color = Color::RGB(255, 128, 128);
 // define_key SDL::Key::RETURN, :ok
 // define_pad_button 0, :ok
 
-
-
 pub fn main() -> Result<(), String> {
     let sdl_context = sdl2::init()?;
     let video_subsystem = sdl_context.video()?;
@@ -55,14 +56,21 @@ pub fn main() -> Result<(), String> {
     let mut canvas = window.into_canvas().build().map_err(|e| e.to_string())?;
     let mut event_pump = sdl_context.event_pump()?;
 
-    let mut game = Game::new();
+    let rng = rand::thread_rng();
+    let mut game = Game::new(rng);
 
     'running: loop {
         for event in event_pump.poll_iter() {
             match event {
-                Event::Quit { .. } | Event::KeyDown { keycode: Some(Keycode::Escape), .. }
-                    => break 'running,
-                Event::KeyDown { keycode: Some(code), .. } => { game.update(code) },
+                Event::Quit { .. }
+                | Event::KeyDown {
+                    keycode: Some(Keycode::Escape),
+                    ..
+                } => break 'running,
+                Event::KeyDown {
+                    keycode: Some(code),
+                    ..
+                } => game.update(code),
                 _ => {}
             }
         }
@@ -72,7 +80,6 @@ pub fn main() -> Result<(), String> {
 
     Ok(())
 }
-
 
 fn render(canvas: &mut Canvas<Window>, game: &Game) -> Result<(), String> {
     canvas.set_draw_color(BACKGROUND_COLOR);
@@ -96,7 +103,6 @@ fn render(canvas: &mut Canvas<Window>, game: &Game) -> Result<(), String> {
         }
     }
 
-
     canvas.present();
 
     Ok(())
@@ -113,14 +119,38 @@ impl PosInCell {
     }
 }
 
-// ゲームのモデル。できればSDLに依存しないようにしたい
-struct Game {
-    block: Block,
+enum Shape {
+    S0 = 0,
+    S1,
+    S2,
+    S3,
+    S4,
+    S5,
+}
+
+impl Shape {
+    fn max() -> i32 {
+        5
+    }
+}
+
+impl Shape {
+    fn from_i32(n: i32) -> Shape {
+        match n {
+            0 => Shape::S0,
+            1 => Shape::S1,
+            2 => Shape::S2,
+            3 => Shape::S3,
+            4 => Shape::S4,
+            5 => Shape::S5,
+            _ => panic!("Unknown value for Shape: {}", n),
+        }
+    }
 }
 
 struct Block {
     pos: PosInCell,
-    shape: u8,
+    shape: Shape,
     rot: i8,
     color: u8,
 }
@@ -128,7 +158,7 @@ impl Block {
     fn new() -> Block {
         Block {
             pos: PosInCell::new(),
-            shape: 0,
+            shape: Shape::S0,
             rot: 0,
             color: 0,
         }
@@ -136,13 +166,20 @@ impl Block {
 
     fn get_pattern(&self) -> [[u8; 5]; 5] {
         // TODO: 実装
-        [
-            [0,0,0,0,0],
-            [0,0,1,0,0],
-            [0,1,1,1,0],
-            [0,0,0,0,0],
-            [0,0,0,0,0],
-        ]
+        let base = [
+            [0, 0, 0, 0, 0],
+            [0, 0, 1, 0, 0],
+            [0, 1, 1, 1, 0],
+            [0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0],
+        ];
+        match self.rot {
+            0 => base,
+            1 => base,
+            2 => base,
+            3 => base,
+            _ => panic!(),
+        }
     }
 
     fn rotate_right(&mut self) {
@@ -152,14 +189,31 @@ impl Block {
     fn rotate_left(&mut self) {
         self.rot = (self.rot + 1) % 4;
     }
+
+    fn create_randomly(rng: &mut ThreadRng) -> Block {
+        let mut block = Block::new();
+        block.shape = Shape::from_i32(rng.gen_range(0..=Shape::max()));
+        block.color = rng.gen_range(0..=2);
+        block
+    }
+}
+
+// ゲームのモデル。できればSDLに依存しないようにしたい
+struct Game {
+    block: Block,
+    rng: ThreadRng,
 }
 
 impl Game {
-    fn new() -> Game {
-        Game {
+    fn new(rng: ThreadRng) -> Game {
+        let mut game = Game {
             block: Block::new(),
-        }
+            rng: rng,
+        };
+        game.set_next_block();
+        game
     }
+
     fn update(&mut self, keycode: Keycode) {
         // println!("key pressed: {}", keycode);
         match keycode {
@@ -167,7 +221,18 @@ impl Game {
             Keycode::Left => self.block.pos.x -= 1,
             Keycode::Up => self.block.pos.y -= 1,
             Keycode::Down => self.block.pos.y += 1,
-            _ => {},
+            _ => {}
         }
+    }
+
+    // fn create_next_block(&mut self) -> Block {
+    //     let mut block = Block::new();
+    //     block.shape = Shape::from_i32(self.rng.gen_range(0..=Shape::max()));
+    //     block.color = self.rng.gen_range(0..=2);
+    //     block
+    // }
+
+    fn set_next_block(&mut self) {
+        self.block = Block::create_randomly(&mut self.rng);
     }
 }
