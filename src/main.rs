@@ -262,7 +262,8 @@ impl Block {
     fn create_randomly(rng: &mut ThreadRng) -> Block {
         let mut block = Block::new();
         block.pos = PosInCell::new(4, 0);
-        block.shape = Shape::from_i32(rng.gen_range(0..=Shape::max()));
+        // block.shape = Shape::from_i32(rng.gen_range(0..=Shape::max()));
+        block.shape = Shape::from_i32(0);
         block.color = rng.gen_range(0..=2);
         block
     }
@@ -300,6 +301,7 @@ struct Game {
     piles: Piles,
     rng: ThreadRng,
     frame: i32,
+    erase_row_wait: i32,
 }
 
 impl Game {
@@ -309,6 +311,7 @@ impl Game {
             piles: Piles::new(),
             rng: rng,
             frame: 0,
+            erase_row_wait: 0,
         };
         game.piles.setup_wall_and_floor();
         game.set_next_block();
@@ -316,19 +319,22 @@ impl Game {
     }
 
     fn update(&mut self, command: &str) {
-        match command {
-            "right" => self.move_by_delta(1, 0),
-            "left" => self.move_by_delta(-1, 0),
-            "down" => self.move_by_delta(0, 1),
-            "rotate_left" => self.block.rotate_left(),
-            "rotate_right" => self.block.rotate_right(),
-            // Keycode::A => self.set_next_block(),
-            _ => {}
+        if self.erase_row_wait <= 0 {
+            match command {
+                "right" => self.move_by_delta(1, 0),
+                "left" => self.move_by_delta(-1, 0),
+                "down" => self.move_by_delta(0, 1),
+                "rotate_left" => self.block.rotate_left(),
+                "rotate_right" => self.block.rotate_right(),
+                _ => {}
+            }
+
+            if self.frame != 0 && self.frame % 20 == 0 {
+                self.move_by_delta(0, 1);
+            }
         }
 
-        if self.frame != 0 && self.frame % 10 == 0 {
-            self.move_by_delta(0, 1);
-        }
+        self.check_erase_row();
 
         self.frame += 1;
     }
@@ -375,5 +381,43 @@ impl Game {
 
     fn set_next_block(&mut self) {
         self.block = Block::create_randomly(&mut self.rng);
+    }
+
+    fn check_erase_row(&mut self) {
+        if self.erase_row_wait > 0 {
+            self.erase_row_wait -= 1;
+            if self.erase_row_wait == 0 {
+                let filled_rows = self.get_filled_rows();
+                // TODO: 消えた分を落下させる
+            }
+        } else {
+            let filled_rows = self.get_filled_rows();
+            if filled_rows.len() > 0 {
+                println!("Filled!");
+                for y in filled_rows {
+                    for x in 1..11 {
+                        self.piles.pattern[y][x] = 0;
+                    }
+                }
+                self.erase_row_wait = 20;
+            }
+        }
+    }
+
+    fn get_filled_rows(&self) -> Vec<usize> {
+        let mut result = Vec::<usize>::new();
+        for y in 0..(self.piles.pattern.len() - 1) {
+            // TODO: .all()とかできる？
+            let mut is_row_filled = true;
+            for x in 1..(self.piles.pattern[y].len() - 1) {
+                if !self.piles.is_filled(x, y) {
+                    is_row_filled = false;
+                }
+            }
+            if is_row_filled {
+                result.push(y);
+            }
+        }
+        result
     }
 }
