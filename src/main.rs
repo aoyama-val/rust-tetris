@@ -56,6 +56,9 @@ fn render(canvas: &mut Canvas<Window>, game: &Game) -> Result<(), String> {
     canvas.set_draw_color(Color::RGB(0, 0, 0));
     canvas.clear();
 
+    const LEFT_WALL_X: i32 = 6;
+
+    // render block
     let block_color = match game.block.color {
         0 => Color::RGB(255, 128, 128),
         1 => Color::RGB(128, 255, 128),
@@ -67,24 +70,23 @@ fn render(canvas: &mut Canvas<Window>, game: &Game) -> Result<(), String> {
     for j in 0..pattern.len() {
         for i in 0..pattern[j].len() {
             if pattern[j][i] == 1 {
-                let x = ((game.block.pos.x + i as i32) * CELL_SIZE_PX as i32) as i32;
+                let x = ((LEFT_WALL_X + game.block.pos.x + i as i32) * CELL_SIZE_PX as i32) as i32;
                 let y = ((game.block.pos.y + j as i32) * CELL_SIZE_PX as i32) as i32;
                 canvas.fill_rect(Rect::new(x, y, CELL_SIZE_PX, CELL_SIZE_PX))?;
             }
         }
     }
 
-    // render wall
+    // render piles
     canvas.set_draw_color(Color::RGB(128, 128, 128));
-    for i in 0..21 {
-        let y = (20 - i) * CELL_SIZE_PX;
-        canvas.fill_rect(Rect::new(6 * CELL_SIZE_PX as i32, y as i32, CELL_SIZE_PX, CELL_SIZE_PX))?;
-        canvas.fill_rect(Rect::new(18 * CELL_SIZE_PX as i32, y as i32, CELL_SIZE_PX, CELL_SIZE_PX))?;
-    }
-    for i in 0..12 {
-        let x = (6 + i) * CELL_SIZE_PX;
-        let y = 20 * CELL_SIZE_PX;
-        canvas.fill_rect(Rect::new(x as i32, y as i32, CELL_SIZE_PX, CELL_SIZE_PX))?;
+    for i in 0..(game.piles.pattern.len()) {
+        for j in 0..(game.piles.pattern[i].len()) {
+            if game.piles.pattern[i][j] == 1 {
+                let x: i32 = (LEFT_WALL_X + j as i32) as i32 * CELL_SIZE_PX as i32;
+                let y: i32 = i as i32 * CELL_SIZE_PX as i32;
+                canvas.fill_rect(Rect::new(x, y, CELL_SIZE_PX, CELL_SIZE_PX))?;
+            }
+        }
     }
 
     canvas.present();
@@ -200,7 +202,7 @@ struct Block {
 impl Block {
     fn new() -> Block {
         Block {
-            pos: PosInCell::new(12, 0),
+            pos: PosInCell::new(6, 0),
             shape: Shape::S0,
             rot: 0,
             color: 0,
@@ -240,25 +242,7 @@ impl Block {
         self.rot = (self.rot + 1) % 4;
     }
 
-    fn is_collide(&mut self, x_delta: i32, y_delta: i32) -> bool {
-        let pattern = self.get_pattern();
-        for i in 0..5 {
-            for j in 0..5 {
-                if pattern[i][j] != 0 {
-                    let new_pos = self.pos.x + j as i32 + x_delta;
-                    if new_pos <= 6 || new_pos >= 18 {
-                        return true
-                    }
-                }
-            }
-        }
-        false
-    }
-
     fn move_by_delta(&mut self, x_delta: i32, y_delta: i32) {
-        if self.is_collide(x_delta, y_delta) {
-            return
-        }
         self.pos.x += x_delta;
         self.pos.y += y_delta;
     }
@@ -271,9 +255,36 @@ impl Block {
     }
 }
 
+struct Piles {
+    pattern: [[u8; 12]; 21],
+}
+
+impl Piles {
+    fn new() -> Piles {
+        Piles {
+            pattern: [[0; 12]; 21],
+        }
+    }
+
+    fn setup_wall_and_floor(&mut self) {
+        for i in 0..21 {
+            self.pattern[i][0] = 1;
+            self.pattern[i][11] = 1;
+        }
+        for i in 0..12 {
+            self.pattern[20][i] = 1;
+        }
+    }
+
+    fn is_filled(&self, x: usize, y: usize) -> bool {
+        self.pattern[y][x] == 1
+    }
+}
+
 // ゲームのモデル。できればSDLに依存しないようにしたい
 struct Game {
     block: Block,
+    piles: Piles,
     rng: ThreadRng,
 }
 
@@ -281,23 +292,48 @@ impl Game {
     fn new(rng: ThreadRng) -> Game {
         let mut game = Game {
             block: Block::new(),
+            piles: Piles::new(),
             rng: rng,
         };
+        game.piles.setup_wall_and_floor();
         game.set_next_block();
         game
     }
 
     fn update(&mut self, keycode: Keycode) {
         match keycode {
-            Keycode::Right => self.block.move_by_delta(1, 0),
-            Keycode::Left => self.block.move_by_delta(-1, 0),
-            Keycode::Up => self.block.move_by_delta(0, -1),
-            Keycode::Down => self.block.move_by_delta(0, 1),
+            Keycode::Right => self.move_by_delta(1, 0),
+            Keycode::Left => self.move_by_delta(-1, 0),
+            Keycode::Up => self.move_by_delta(0, -1),
+            Keycode::Down => self.move_by_delta(0, 1),
             Keycode::Z => self.block.rotate_left(),
             Keycode::X => self.block.rotate_right(),
             Keycode::A => self.set_next_block(),
             _ => {}
         }
+    }
+
+    fn is_collide(&mut self, x_delta: i32, y_delta: i32) -> bool {
+        let pattern = self.block.get_pattern();
+        for i in 0..5 {
+            for j in 0..5 {
+                if pattern[i][j] != 0 {
+                    let new_x = self.block.pos.x + j as i32 + x_delta;
+                    let new_y = self.block.pos.y + i as i32 + y_delta;
+                    if self.piles.is_filled(new_x as usize, new_y as usize) {
+                        return true;
+                    }
+                }
+            }
+        }
+        false
+    }
+
+    fn move_by_delta(&mut self, x_delta: i32, y_delta: i32) {
+        if self.is_collide(x_delta, y_delta) {
+            return
+        }
+        self.block.move_by_delta(x_delta, y_delta);
     }
 
     fn set_next_block(&mut self) {
