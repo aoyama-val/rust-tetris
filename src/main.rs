@@ -11,6 +11,8 @@ use sdl2::video::Window;
 const SCREEN_WIDTH: u32 = 640;
 const SCREEN_HEIGHT: u32 = 420;
 const CELL_SIZE_PX: u32 = 20;
+const BACKGROUND_COLOR: Color = Color::RGB(128, 128, 128);
+const BOX_COLOR: Color = Color::RGB(255, 128, 128);
 
 // SCREEN_WIDTH = 640
 // SCREEN_HEIGHT = 420
@@ -44,16 +46,13 @@ const CELL_SIZE_PX: u32 = 20;
 pub fn main() -> Result<(), String> {
     let sdl_context = sdl2::init()?;
     let video_subsystem = sdl_context.video()?;
-
     let window = video_subsystem
         .window("rust-tetris", SCREEN_WIDTH, SCREEN_HEIGHT)
         .position_centered()
         .opengl()
         .build()
         .map_err(|e| e.to_string())?;
-
     let mut canvas = window.into_canvas().build().map_err(|e| e.to_string())?;
-
     let mut event_pump = sdl_context.event_pump()?;
 
     let mut game = Game::new();
@@ -67,45 +66,47 @@ pub fn main() -> Result<(), String> {
                 _ => {}
             }
         }
-        if let Err(s) = render(&mut canvas, &game) {
-            return Err(s);
-        }
+        render(&mut canvas, &game)?;
         ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 30));
     }
 
     Ok(())
 }
 
+
 fn render(canvas: &mut Canvas<Window>, game: &Game) -> Result<(), String> {
-    canvas.set_draw_color(Color::RGB(128, 128, 128));
+    canvas.set_draw_color(BACKGROUND_COLOR);
     canvas.clear();
-    canvas.set_draw_color(Color::RGB(255, 128, 128));
-    canvas.fill_rect(Rect::new(game.obj_x as i32, game.obj_y as i32, 10, 10))?;
+    canvas.set_draw_color(BOX_COLOR);
+    canvas.fill_rect(Rect::new((game.obj_pos.x * CELL_SIZE_PX) as i32, (game.obj_pos.y * CELL_SIZE_PX) as i32, CELL_SIZE_PX, CELL_SIZE_PX))?;
     canvas.present();
 
     Ok(())
 }
 
+struct PosInCell {
+    x: u32,
+    y: u32,
+}
+
 // ゲームのモデル。できればSDLに依存しないようにしたい
 struct Game {
-    obj_x: u32,
-    obj_y: u32,
+    obj_pos: PosInCell,
 }
 
 impl Game {
     fn new() -> Game {
         Game {
-            obj_x: SCREEN_WIDTH / 2,
-            obj_y: SCREEN_HEIGHT / 2,
+            obj_pos: PosInCell { x: 0, y: 0 },
         }
     }
     fn update(&mut self, keycode: Keycode) {
         // println!("key pressed: {}", keycode);
         match keycode {
-            Keycode::Right => self.obj_x += 5,
-            Keycode::Left => self.obj_x -= 5,
-            Keycode::Up => self.obj_y -= 5,
-            Keycode::Down => self.obj_y += 5,
+            Keycode::Right => self.obj_pos.x += 1,
+            Keycode::Left => self.obj_pos.x -= 1,
+            Keycode::Up => self.obj_pos.y -= 1,
+            Keycode::Down => self.obj_pos.y += 1,
             _ => {},
         }
     }
