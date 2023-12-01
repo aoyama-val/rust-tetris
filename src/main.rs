@@ -394,9 +394,22 @@ impl Game {
             let filled_rows = self.get_filled_rows();
             if filled_rows.len() > 0 {
                 println!("Filled!");
-                for y in filled_rows {
+                for y in &filled_rows {
                     for x in 1..11 {
-                        self.piles.pattern[y][x] = 0;
+                        self.piles.pattern[*y][x] = 0;
+                    }
+                }
+
+                // 消えた分を落下させる
+                // println!("filled_rows = {:?}", filled_rows);
+                let filled_row_max = filled_rows[filled_rows.len() - 1];
+                for y in (0..=filled_row_max).rev() {
+                    for x in 1..11 {
+                        if y >= filled_rows.len() {
+                            self.piles.pattern[y][x] = self.piles.pattern[y - filled_rows.len()][x];
+                        } else {
+                            self.piles.pattern[y][x] = 0;
+                        }
                     }
                 }
                 self.erase_row_wait = 20;
