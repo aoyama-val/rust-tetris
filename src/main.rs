@@ -91,6 +91,8 @@ impl PosInCell {
     }
 }
 
+type Pattern = [[u8; 5]; 5];
+
 enum Shape {
     S0 = 0,
     S1,
@@ -120,26 +122,9 @@ impl Shape {
             _ => panic!("Unknown value for Shape: {}", n),
         }
     }
-}
 
-struct Block {
-    pos: PosInCell,
-    shape: Shape,
-    rot: i8,
-    color: u8,
-}
-impl Block {
-    fn new() -> Block {
-        Block {
-            pos: PosInCell::new(),
-            shape: Shape::S0,
-            rot: 0,
-            color: 0,
-        }
-    }
-
-    fn get_pattern(&self) -> [[u8; 5]; 5] {
-        let base: [[u8; 5]; 5] = match self.shape {
+    fn get_base_pattern(&self) -> Pattern {
+        let base: Pattern = match self {
             Shape::S0 => [
                 [0, 0, 0, 0, 0],
                 [0, 0, 1, 0, 0],
@@ -190,6 +175,28 @@ impl Block {
                 [0, 0, 0, 0, 0],
             ],
         };
+        base
+    }
+}
+
+struct Block {
+    pos: PosInCell,
+    shape: Shape,
+    rot: i8,
+    color: u8,
+}
+impl Block {
+    fn new() -> Block {
+        Block {
+            pos: PosInCell::new(),
+            shape: Shape::S0,
+            rot: 0,
+            color: 0,
+        }
+    }
+
+    fn get_pattern(&self) -> Pattern {
+        let base = self.shape.get_base_pattern();
         let mut result = base;
         for _ in 0..self.rot {
             result = Self::rotate_pattern(result);
@@ -203,8 +210,8 @@ impl Block {
         }
     }
 
-    fn rotate_pattern(base: [[u8; 5]; 5]) -> [[u8; 5]; 5] {
-        let mut result: [[u8; 5]; 5] = [[0; 5]; 5];
+    fn rotate_pattern(base: Pattern) -> Pattern {
+        let mut result: Pattern = [[0; 5]; 5];
         for i in 0..5 {
             for j in 0..5 {
                 result[4 - j][i] = base[i][j];
