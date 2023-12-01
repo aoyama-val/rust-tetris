@@ -51,7 +51,7 @@ pub fn main() -> Result<(), String> {
                         Keycode::X => "rotate_right",
                         _ => "",
                     };
-                },
+                }
                 _ => {}
             }
         }
@@ -351,7 +351,7 @@ impl Game {
 
     fn move_by_delta(&mut self, x_delta: i32, y_delta: i32) {
         if self.is_collide(x_delta, y_delta) {
-            return
+            return;
         }
         self.block.move_by_delta(x_delta, y_delta);
 
@@ -361,7 +361,8 @@ impl Game {
                 for j in 0..5 {
                     let block_pattern = self.block.get_pattern();
                     if block_pattern[i][j] == 1 {
-                        self.piles.pattern[(self.block.pos.y + i as i32) as usize][(self.block.pos.x + j as i32) as usize] = 1;
+                        self.piles.pattern[(self.block.pos.y + i as i32) as usize]
+                            [(self.block.pos.x + j as i32) as usize] = 1;
                     }
                 }
             }
