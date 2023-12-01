@@ -77,36 +77,96 @@ pub fn main() -> Result<(), String> {
 fn render(canvas: &mut Canvas<Window>, game: &Game) -> Result<(), String> {
     canvas.set_draw_color(BACKGROUND_COLOR);
     canvas.clear();
-    canvas.set_draw_color(BOX_COLOR);
-    canvas.fill_rect(Rect::new((game.obj_pos.x * CELL_SIZE_PX) as i32, (game.obj_pos.y * CELL_SIZE_PX) as i32, CELL_SIZE_PX, CELL_SIZE_PX))?;
+
+    let block_color = match game.block.color {
+        0 => Color::RGB(255, 128, 128),
+        1 => Color::RGB(128, 255, 128),
+        2 => Color::RGB(128, 128, 255),
+        _ => Color::RGB(255, 255, 255),
+    };
+    canvas.set_draw_color(block_color);
+    let pattern = game.block.get_pattern();
+    for j in 0..pattern.len() {
+        for i in 0..pattern[j].len() {
+            if pattern[j][i] == 1 {
+                let x = ((game.block.pos.x + i as i32) * CELL_SIZE_PX as i32) as i32;
+                let y = ((game.block.pos.y + j as i32) * CELL_SIZE_PX as i32) as i32;
+                canvas.fill_rect(Rect::new(x, y, CELL_SIZE_PX, CELL_SIZE_PX))?;
+            }
+        }
+    }
+
+
     canvas.present();
 
     Ok(())
 }
 
 struct PosInCell {
-    x: u32,
-    y: u32,
+    x: i32,
+    y: i32,
+}
+
+impl PosInCell {
+    fn new() -> PosInCell {
+        PosInCell { x: 0, y: 0 }
+    }
 }
 
 // ゲームのモデル。できればSDLに依存しないようにしたい
 struct Game {
-    obj_pos: PosInCell,
+    block: Block,
+}
+
+struct Block {
+    pos: PosInCell,
+    shape: u8,
+    rot: i8,
+    color: u8,
+}
+impl Block {
+    fn new() -> Block {
+        Block {
+            pos: PosInCell::new(),
+            shape: 0,
+            rot: 0,
+            color: 0,
+        }
+    }
+
+    fn get_pattern(&self) -> [[u8; 5]; 5] {
+        // TODO: 実装
+        [
+            [0,0,0,0,0],
+            [0,0,1,0,0],
+            [0,1,1,1,0],
+            [0,0,0,0,0],
+            [0,0,0,0,0],
+        ]
+    }
+
+    fn rotate_right(&mut self) {
+        self.rot = (self.rot + 3) % 4;
+    }
+
+    fn rotate_left(&mut self) {
+        self.rot = (self.rot + 1) % 4;
+    }
 }
 
 impl Game {
     fn new() -> Game {
         Game {
-            obj_pos: PosInCell { x: 0, y: 0 },
+            block: Block::new(),
         }
     }
     fn update(&mut self, keycode: Keycode) {
         // println!("key pressed: {}", keycode);
         match keycode {
-            Keycode::Right => self.obj_pos.x += 1,
-            Keycode::Left => self.obj_pos.x -= 1,
-            Keycode::Up => self.obj_pos.y -= 1,
-            Keycode::Down => self.obj_pos.y += 1,
+            Keycode::Right => self.block.pos.x += 1,
+            Keycode::Left => self.block.pos.x -= 1,
+            Keycode::Up => self.block.pos.y -= 1,
+            Keycode::Down => self.block.pos.y += 1,
             _ => {},
         }
     }
