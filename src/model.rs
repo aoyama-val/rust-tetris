@@ -1,5 +1,6 @@
-use rand::Rng;
-use rand::rngs::ThreadRng;
+use rand;
+use rand::prelude::*;
+use std::time;
 
 // Game関連定数
 pub const BOARD_X_LEN: usize = 12;
@@ -162,7 +163,7 @@ impl Block {
         self.y += y_delta;
     }
 
-    fn create_randomly(rng: &mut ThreadRng, created_count: u32) -> Block {
+    fn create_randomly(rng: &mut StdRng, created_count: u32) -> Block {
         let mut block = Block::new();
         block.x = 4;
         block.y = 0;
@@ -203,7 +204,7 @@ impl Piles {
 
 // ゲームのモデル。SDLに依存しない。
 pub struct Game {
-    pub rng: ThreadRng,
+    pub rng: StdRng,
     pub is_over: bool,
     pub frame: i32,
     pub settle_wait: u32,
@@ -214,7 +215,11 @@ pub struct Game {
 }
 
 impl Game {
-    pub fn new(rng: ThreadRng) -> Game {
+    pub fn new() -> Game {
+        let now = time::SystemTime::now();
+        let timestamp = now.duration_since(time::UNIX_EPOCH).expect("SystemTime before UNIX EPOCH!").as_secs();
+        let rng = StdRng::seed_from_u64(timestamp);
+
         let mut game = Game {
             rng: rng,
             is_over: false,
@@ -399,8 +404,7 @@ mod tests {
     // 消える行がある場合
     #[test]
     fn test_check_erase_row() {
-        let rng = rand::thread_rng();
-        let mut game = Game::new(rng);
+        let mut game = Game::new();
         game.piles.pattern = [
             [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
             [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
@@ -458,8 +462,7 @@ mod tests {
     // 消える行がない場合
     #[test]
     fn test_check_erase_row2() {
-        let rng = rand::thread_rng();
-        let mut game = Game::new(rng);
+        let mut game = Game::new();
         game.piles.pattern = [
             [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
             [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
@@ -517,8 +520,7 @@ mod tests {
     //
     #[test]
     fn test_check_erase_row3() {
-        let rng = rand::thread_rng();
-        let mut game = Game::new(rng);
+        let mut game = Game::new();
         game.piles.pattern = [
             [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
             [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],

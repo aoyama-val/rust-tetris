@@ -27,8 +27,7 @@ pub fn main() -> Result<(), String> {
     canvas.set_blend_mode(BlendMode::Blend);
     let mut event_pump = sdl_context.event_pump()?;
 
-    let rng = rand::thread_rng();
-    let mut game = Game::new(rng);
+    let mut game = Game::new();
 
     'running: loop {
         let mut command = "";
