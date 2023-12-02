@@ -1,6 +1,9 @@
 use rand;
 use rand::prelude::*;
+use std::fs::File;
+use std::io::Read;
 use std::time;
+use toml::Table;
 
 // Game関連定数
 pub const BOARD_X_LEN: usize = 12;
@@ -254,14 +257,49 @@ impl Game {
                 [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
                 [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
                 [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-                [1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1],
-                [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
                 [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
             ]
         };
 
         game.spawn_block();
         game
+    }
+
+    pub fn load_config(&mut self) {
+        let filename = "tetris.toml";
+        let mut f = match File::open(filename) {
+            Ok(f) => f,
+            Err(_) => return,
+        };
+
+        let mut content = String::new();
+        f.read_to_string(&mut content).unwrap();
+
+        let parsed = content.parse::<Table>().unwrap();
+        if let Some(value)= parsed.get("seed") {
+            if let Some(seed) = value.as_integer() {
+                println!("seed = {}", seed);
+                let rng = StdRng::seed_from_u64(seed as u64);
+                self.rng = rng;
+            }
+        }
+
+        if let Some(value)= parsed.get("pattern") {
+            if let Some(pattern) = value.as_str() {
+                let mut p:Piles = Piles { pattern: [[0; BOARD_X_LEN]; BOARD_Y_LEN] };
+                for (i, line) in pattern.lines().enumerate() {
+                    for (j, col) in line.split_ascii_whitespace().enumerate() {
+                        p.pattern[i][j] = col.parse::<u8>().unwrap();
+                    }
+                    // println!("line = [{}]", line);
+                }
+                println!("pattern:");
+                print_pattern(p.pattern);
+                self.piles = p;
+            }
+        }
     }
 
     pub fn update(&mut self, command: &str) {

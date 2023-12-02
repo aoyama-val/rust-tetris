@@ -28,6 +28,7 @@ pub fn main() -> Result<(), String> {
     let mut event_pump = sdl_context.event_pump()?;
 
     let mut game = Game::new();
+    game.load_config();
 
     'running: loop {
         let mut command = "";
