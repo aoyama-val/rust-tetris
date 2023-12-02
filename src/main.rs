@@ -74,7 +74,9 @@ fn render(canvas: &mut Canvas<Window>, game: &Game) -> Result<(), String> {
     canvas.set_draw_color(Color::RGB(128, 128, 128));
     for i in 0..(game.piles.pattern.len()) {
         for j in 0..(game.piles.pattern[i].len()) {
-            if game.piles.pattern[i][j] == 1 {
+            if game.piles.pattern[i][j] >= 1 {
+                let color = get_color(game.piles.pattern[i][j]);
+                canvas.set_draw_color(color);
                 let x: i32 = (LEFT_WALL_X + j as i32) as i32 * CELL_SIZE_PX as i32;
                 let y: i32 = i as i32 * CELL_SIZE_PX as i32;
                 canvas.fill_rect(Rect::new(x, y, CELL_SIZE_PX, CELL_SIZE_PX))?;
@@ -104,6 +106,17 @@ fn render(canvas: &mut Canvas<Window>, game: &Game) -> Result<(), String> {
     canvas.present();
 
     Ok(())
+}
+
+fn get_color(color_num: u8) -> Color {
+    match color_num {
+        0 => Color::RGB(0, 0, 0),
+        1 => Color::RGB(128, 128, 128),
+        2 => Color::RGB(255, 128, 128),
+        3 => Color::RGB(128, 255, 128),
+        4 => Color::RGB(128, 128, 255),
+        _ => Color::RGB(255, 255, 255),
+    }
 }
 
 struct PosInCell {
@@ -270,7 +283,7 @@ impl Block {
 }
 
 struct Piles {
-    pattern: [[u8; 12]; 21],
+    pattern: [[u8; 12]; 21], // 0:なし 1:壁or床 2〜:ブロック残骸
 }
 
 impl Piles {
@@ -291,7 +304,7 @@ impl Piles {
     }
 
     fn is_filled(&self, x: usize, y: usize) -> bool {
-        self.pattern[y][x] == 1
+        self.pattern[y][x] >= 1
     }
 }
 
@@ -363,18 +376,22 @@ impl Game {
 
         // 床に接触した
         if y_delta > 0 && self.is_collide(0, 1) {
-            for i in 0..5 {
-                for j in 0..5 {
-                    let block_pattern = self.block.get_pattern();
-                    if block_pattern[i][j] == 1 {
-                        self.piles.pattern[(self.block.pos.y + i as i32) as usize]
-                            [(self.block.pos.x + j as i32) as usize] = 1;
-                    }
-                }
-            }
+            self.settle_block();
             self.set_next_block();
             if self.is_collide(0, 0) {
                 println!("Game over!");
+            }
+        }
+    }
+
+    fn settle_block(&mut self) {
+        for i in 0..5 {
+            for j in 0..5 {
+                let block_pattern = self.block.get_pattern();
+                if block_pattern[i][j] == 1 {
+                    self.piles.pattern[(self.block.pos.y + i as i32) as usize]
+                        [(self.block.pos.x + j as i32) as usize] = 2  +self.block.color;
+                }
             }
         }
     }
