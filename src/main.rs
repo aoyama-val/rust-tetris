@@ -333,7 +333,6 @@ struct Game {
     rng: ThreadRng,
     is_over: bool,
     frame: i32,
-    erase_row_wait: i32,
     settle_wait: u32,
     piles: Piles,
     block: Block,
@@ -347,7 +346,6 @@ impl Game {
             rng: rng,
             is_over: false,
             frame: 0,
-            erase_row_wait: 0,
             settle_wait: 0,
             piles: Piles::new(),
             block: Block::new(),
@@ -504,7 +502,6 @@ impl Game {
                     }
                 }
             }
-            // self.erase_row_wait = 20;
 
             println!("After:");
             print_pattern(self.piles.pattern);
