@@ -13,6 +13,8 @@ use std::time::Duration;
 
 const SCREEN_WIDTH: u32 = 640;
 const SCREEN_HEIGHT: u32 = 420;
+const CELL_SIZE_PX: u32 = 20;
+const LEFT_WALL_X: i32 = 6;
 const FPS: u32 = 30;
 
 pub fn main() -> Result<(), String> {
@@ -67,9 +69,6 @@ fn render(canvas: &mut Canvas<Window>, game: &Game) -> Result<(), String> {
     canvas.set_draw_color(Color::RGB(0, 0, 0));
     canvas.clear();
 
-    const CELL_SIZE_PX: u32 = 20;
-    const LEFT_WALL_X: i32 = 6;
-
     // render piles
     canvas.set_draw_color(Color::RGB(128, 128, 128));
     for i in 0..(game.piles.pattern.len()) {
@@ -85,26 +84,34 @@ fn render(canvas: &mut Canvas<Window>, game: &Game) -> Result<(), String> {
     }
 
     // render block
-    let block_color = match game.block.color {
+    render_block(canvas, &game.block, LEFT_WALL_X + game.block.pos.x as i32, game.block.pos.y as i32)?;
+
+    // render next block
+    render_block(canvas, &game.next_block, 21, 0)?;
+
+    canvas.present();
+
+    Ok(())
+}
+
+fn render_block(canvas: &mut Canvas<Window>, block: &Block, x_in_cell: i32, y_in_cell: i32) -> Result<(), String> {
+    let block_color = match block.color {
         0 => Color::RGB(255, 128, 128),
         1 => Color::RGB(128, 255, 128),
         2 => Color::RGB(128, 128, 255),
         _ => Color::RGB(255, 255, 255),
     };
     canvas.set_draw_color(block_color);
-    let pattern = game.block.get_pattern();
+    let pattern = block.get_pattern();
     for j in 0..pattern.len() {
         for i in 0..pattern[j].len() {
             if pattern[j][i] == 1 {
-                let x = ((LEFT_WALL_X + game.block.pos.x + i as i32) * CELL_SIZE_PX as i32) as i32;
-                let y = ((game.block.pos.y + j as i32) * CELL_SIZE_PX as i32) as i32;
+                let x = (x_in_cell + i as i32) * CELL_SIZE_PX as i32;
+                let y = (y_in_cell + j as i32) * CELL_SIZE_PX as i32;
                 canvas.fill_rect(Rect::new(x, y, CELL_SIZE_PX, CELL_SIZE_PX))?;
             }
         }
     }
-
-    canvas.present();
-
     Ok(())
 }
 
@@ -119,6 +126,7 @@ fn get_color(color_num: u8) -> Color {
     }
 }
 
+#[derive(Debug, Clone, Copy)]
 struct PosInCell {
     x: i32,
     y: i32,
@@ -132,6 +140,7 @@ impl PosInCell {
 
 type Pattern = [[u8; 5]; 5];
 
+#[derive(Debug, Clone, Copy)]
 enum Shape {
     S0 = 0,
     S1,
@@ -218,6 +227,7 @@ impl Shape {
     }
 }
 
+#[derive(Debug, Clone, Copy)]
 struct Block {
     pos: PosInCell,
     shape: Shape,
@@ -275,8 +285,8 @@ impl Block {
     fn create_randomly(rng: &mut ThreadRng) -> Block {
         let mut block = Block::new();
         block.pos = PosInCell::new(4, 0);
-        // block.shape = Shape::from_i32(rng.gen_range(0..=Shape::max()));
-        block.shape = Shape::from_i32(0);
+        block.shape = Shape::from_i32(rng.gen_range(0..=Shape::max()));
+        // block.shape = Shape::from_i32(0);
         block.color = rng.gen_range(0..=2);
         block
     }
@@ -311,6 +321,7 @@ impl Piles {
 // ゲームのモデル。SDLに依存しない。
 struct Game {
     block: Block,
+    next_block: Block,
     piles: Piles,
     rng: ThreadRng,
     frame: i32,
@@ -321,13 +332,15 @@ impl Game {
     fn new(rng: ThreadRng) -> Game {
         let mut game = Game {
             block: Block::new(),
+            next_block: Block::new(),
             piles: Piles::new(),
             rng: rng,
             frame: 0,
             erase_row_wait: 0,
         };
         game.piles.setup_wall_and_floor();
-        game.set_next_block();
+        game.next_block = Block::create_randomly(&mut game.rng);
+        game.spawn_block();
         game
     }
 
@@ -377,7 +390,7 @@ impl Game {
         // 床に接触した
         if y_delta > 0 && self.is_collide(0, 1) {
             self.settle_block();
-            self.set_next_block();
+            self.spawn_block();
             if self.is_collide(0, 0) {
                 println!("Game over!");
             }
@@ -396,8 +409,9 @@ impl Game {
         }
     }
 
-    fn set_next_block(&mut self) {
-        self.block = Block::create_randomly(&mut self.rng);
+    fn spawn_block(&mut self) {
+        self.block = self.next_block.clone();
+        self.next_block = Block::create_randomly(&mut self.rng);
     }
 
     fn check_erase_row(&mut self) {
@@ -491,22 +505,22 @@ mod tests {
                 [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
                 [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
                 [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
                 [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
                 [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
             ]
         );
