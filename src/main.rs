@@ -301,12 +301,12 @@ impl Block {
         self.pos.y += y_delta;
     }
 
-    fn create_randomly(rng: &mut ThreadRng) -> Block {
+    fn create_randomly(rng: &mut ThreadRng, created_count: u32) -> Block {
         let mut block = Block::new();
         block.pos = PosInCell::new(4, 0);
         block.shape = Shape::from_i32(rng.gen_range(0..=Shape::max()));
         // block.shape = Shape::from_i32(0);
-        block.color = rng.gen_range(0..=2);
+        block.color = (created_count % 3) as u8;
         block
     }
 }
@@ -346,6 +346,7 @@ struct Game {
     piles: Piles,
     block: Block,
     next_block: Block,
+    block_created_count: u32,
 }
 
 impl Game {
@@ -358,9 +359,12 @@ impl Game {
             piles: Piles::new(),
             block: Block::new(),
             next_block: Block::new(),
+            block_created_count: 0,
         };
         game.piles.setup_wall_and_floor();
-        game.next_block = Block::create_randomly(&mut game.rng);
+        game.next_block = Block::create_randomly(&mut game.rng, game.block_created_count);
+        game.block_created_count += 1;
+
         game.spawn_block();
         game
     }
@@ -435,7 +439,8 @@ impl Game {
 
     fn spawn_block(&mut self) {
         self.block = self.next_block.clone();
-        self.next_block = Block::create_randomly(&mut self.rng);
+        self.next_block = Block::create_randomly(&mut self.rng, self.block_created_count);
+        self.block_created_count += 1;
     }
 
     fn check_erase_row(&mut self) {
