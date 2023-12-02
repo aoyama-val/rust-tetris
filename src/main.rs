@@ -179,6 +179,8 @@ impl Shape {
     }
 
     fn get_base_pattern(&self) -> Pattern {
+        // 回転していない状態の形状
+        // 各角度での形状を持つようにした方が良かった。そうしないと、四角形が回転しただけで移動してしまうなど不自然
         let base: Pattern = match self {
             Shape::S0 => [
                 [0, 0, 0, 0, 0],
@@ -302,6 +304,8 @@ impl Block {
     }
 }
 
+// 壁と床を含めた堆積物を表す構造体
+// 壁と床は別にした方が良かったかも
 struct Piles {
     pattern: [[u8; BOARD_X_LEN]; BOARD_Y_LEN], // 0:なし 1:壁or床 2〜:ブロック残骸
 }
