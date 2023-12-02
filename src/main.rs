@@ -161,9 +161,7 @@ impl Shape {
     fn max() -> i32 {
         6
     }
-}
 
-impl Shape {
     fn from_i32(n: i32) -> Shape {
         match n {
             0 => Shape::S0,
