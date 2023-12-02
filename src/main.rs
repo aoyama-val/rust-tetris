@@ -378,8 +378,8 @@ impl Game {
                 "right" => self.move_by_delta(1, 0),
                 "left" => self.move_by_delta(-1, 0),
                 "down" => self.move_by_delta(0, 1),
-                "rotate_left" => self.block.rotate_left(),
-                "rotate_right" => self.block.rotate_right(),
+                "rotate_left" => self.rotate(1),
+                "rotate_right" => self.rotate(-1),
                 _ => {}
             }
 
@@ -435,6 +435,20 @@ impl Game {
                 }
             }
         }
+    }
+
+    fn rotate(&mut self, dir: i32) {
+        if dir > 0 {
+            self.block.rotate_left();
+            if self.is_collide(0, 0) {
+                self.block.rotate_right();
+            }
+        } else {
+            self.block.rotate_right();
+            if self.is_collide(0, 0) {
+                self.block.rotate_left();
+            }
+       }
     }
 
     fn spawn_block(&mut self) {
