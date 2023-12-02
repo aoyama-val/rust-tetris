@@ -392,6 +392,7 @@ impl Game {
     }
 }
 
+#[cfg(test)]
 mod tests {
     use super::*;
 
