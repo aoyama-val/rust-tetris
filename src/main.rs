@@ -155,6 +155,12 @@ impl PosInCell {
 
 type Pattern = [[u8; 5]; 5];
 
+fn print_pattern<const W: usize, const H: usize, T: std::fmt::Debug>(pattern: [[T;W];H]) {
+    for line in pattern {
+        println!("{:?}", line);
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 enum Shape {
     S0 = 0,
@@ -503,14 +509,12 @@ mod tests {
             [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
         ];
         println!("Before:");
-        for line in game.piles.pattern {
-            println!("{:?}", line);
-        }
+        print_pattern(game.piles.pattern);
+
         game.check_erase_row();
+
         println!("After:");
-        for line in game.piles.pattern {
-            println!("{:?}", line);
-        }
+        print_pattern(game.piles.pattern);
         assert_eq!(
             game.piles.pattern,
             [
@@ -567,14 +571,12 @@ mod tests {
             [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
         ];
         println!("Before:");
-        for line in game.piles.pattern {
-            println!("{:?}", line);
-        }
+        print_pattern(game.piles.pattern);
+
         game.check_erase_row();
+
         println!("After:");
-        for line in game.piles.pattern {
-            println!("{:?}", line);
-        }
+        print_pattern(game.piles.pattern);
         assert_eq!(
             game.piles.pattern,
             [
