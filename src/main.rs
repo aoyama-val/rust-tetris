@@ -94,7 +94,7 @@ fn render(canvas: &mut Canvas<Window>, game: &Game) -> Result<(), String> {
     }
 
     // render block
-    render_block(canvas, &game.block, LEFT_WALL_X + game.block.pos.x as i32, game.block.pos.y as i32)?;
+    render_block(canvas, &game.block, LEFT_WALL_X + game.block.x, game.block.y)?;
 
     // render next block
     render_block(canvas, &game.next_block, 21, 0)?;
@@ -138,18 +138,6 @@ fn get_color(color_num: u8) -> Color {
         3 => Color::RGB(128, 255, 128),
         4 => Color::RGB(128, 128, 255),
         _ => Color::RGB(255, 255, 255),
-    }
-}
-
-#[derive(Debug, Clone, Copy)]
-struct PosInCell {
-    x: i32,
-    y: i32,
-}
-
-impl PosInCell {
-    fn new(x: i32, y: i32) -> PosInCell {
-        PosInCell { x, y }
     }
 }
 
@@ -248,7 +236,8 @@ impl Shape {
 
 #[derive(Debug, Clone, Copy)]
 struct Block {
-    pos: PosInCell,
+    x: i32,
+    y: i32,
     shape: Shape,
     rot: i8,
     color: u8,
@@ -256,7 +245,8 @@ struct Block {
 impl Block {
     fn new() -> Block {
         Block {
-            pos: PosInCell::new(0, 0),
+            x: 0,
+            y: 0,
             shape: Shape::S0,
             rot: 0,
             color: 0,
@@ -297,13 +287,14 @@ impl Block {
     }
 
     fn move_by_delta(&mut self, x_delta: i32, y_delta: i32) {
-        self.pos.x += x_delta;
-        self.pos.y += y_delta;
+        self.x += x_delta;
+        self.y += y_delta;
     }
 
     fn create_randomly(rng: &mut ThreadRng, created_count: u32) -> Block {
         let mut block = Block::new();
-        block.pos = PosInCell::new(4, 0);
+        block.x = 4;
+        block.y = 0;
         block.shape = Shape::from_i32(rng.gen_range(0..=Shape::max()));
         // block.shape = Shape::from_i32(0);
         block.color = (created_count % 3) as u8;
@@ -436,8 +427,8 @@ impl Game {
         for i in 0..5 {
             for j in 0..5 {
                 if pattern[i][j] != 0 {
-                    let new_x = self.block.pos.x + j as i32 + x_delta;
-                    let new_y = self.block.pos.y + i as i32 + y_delta;
+                    let new_x = self.block.x + j as i32 + x_delta;
+                    let new_y = self.block.y + i as i32 + y_delta;
                     if self.piles.is_filled(new_x as usize, new_y as usize) {
                         return true;
                     }
@@ -465,8 +456,8 @@ impl Game {
             for j in 0..5 {
                 let block_pattern = self.block.get_pattern();
                 if block_pattern[i][j] == 1 {
-                    self.piles.pattern[(self.block.pos.y + i as i32) as usize]
-                        [(self.block.pos.x + j as i32) as usize] = 2  +self.block.color;
+                    self.piles.pattern[(self.block.y + i as i32) as usize]
+                        [(self.block.x + j as i32) as usize] = 2  +self.block.color;
                 }
             }
         }
