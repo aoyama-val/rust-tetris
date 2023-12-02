@@ -11,10 +11,19 @@ use sdl2::render::{Canvas, BlendMode};
 use sdl2::video::Window;
 use std::time::Duration;
 
+// Game関連定数
+const BOARD_X_LEN: usize = 12;
+const BOARD_X_MIN: usize = 0;
+const BOARD_X_MAX: usize = BOARD_X_LEN - 1;
+const BOARD_Y_LEN: usize = 21;
+const BOARD_Y_MIN: usize = 0;
+const BOARD_Y_MAX: usize = BOARD_Y_LEN - 1;
+const LEFT_WALL_X: i32 = 6;
+
+// Presenter関連定数
 const SCREEN_WIDTH: u32 = 640;
 const SCREEN_HEIGHT: u32 = 420;
 const CELL_SIZE_PX: u32 = 20;
-const LEFT_WALL_X: i32 = 6;
 const FPS: u32 = 30;
 
 pub fn main() -> Result<(), String> {
@@ -297,23 +306,23 @@ impl Block {
 }
 
 struct Piles {
-    pattern: [[u8; 12]; 21], // 0:なし 1:壁or床 2〜:ブロック残骸
+    pattern: [[u8; BOARD_X_LEN]; BOARD_Y_LEN], // 0:なし 1:壁or床 2〜:ブロック残骸
 }
 
 impl Piles {
     fn new() -> Piles {
         Piles {
-            pattern: [[0; 12]; 21],
+            pattern: [[0; BOARD_X_LEN]; BOARD_Y_LEN],
         }
     }
 
     fn setup_wall_and_floor(&mut self) {
-        for i in 0..21 {
-            self.pattern[i][0] = 1;
-            self.pattern[i][11] = 1;
+        for i in BOARD_Y_MIN..=BOARD_Y_MAX {
+            self.pattern[i][BOARD_X_MIN] = 1;
+            self.pattern[i][BOARD_X_MAX] = 1;
         }
-        for i in 0..12 {
-            self.pattern[20][i] = 1;
+        for i in BOARD_X_MIN..=BOARD_X_MAX {
+            self.pattern[BOARD_Y_MAX][i] = 1;
         }
     }
 
@@ -459,8 +468,8 @@ impl Game {
 
     fn get_filled_rows(&self) -> Vec<usize> {
         let mut result = Vec::<usize>::new();
-        for y in 0..(self.piles.pattern.len() - 1) {
-            if (1..(self.piles.pattern[y].len() - 1)).all(|x| self.piles.is_filled(x, y)) {
+        for y in BOARD_Y_MIN..=(BOARD_Y_MAX - 1) {
+            if (1..(BOARD_X_MAX - 1)).all(|x| self.piles.is_filled(x, y)) {
                 result.push(y);
             }
         }
