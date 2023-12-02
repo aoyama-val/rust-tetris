@@ -420,14 +420,7 @@ impl Game {
     fn get_filled_rows(&self) -> Vec<usize> {
         let mut result = Vec::<usize>::new();
         for y in 0..(self.piles.pattern.len() - 1) {
-            // TODO: .all()とかできる？
-            let mut is_row_filled = true;
-            for x in 1..(self.piles.pattern[y].len() - 1) {
-                if !self.piles.is_filled(x, y) {
-                    is_row_filled = false;
-                }
-            }
-            if is_row_filled {
+            if (1..(self.piles.pattern[y].len() - 1)).all(|x| self.piles.is_filled(x, y)) {
                 result.push(y);
             }
         }
