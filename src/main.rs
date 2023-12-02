@@ -433,43 +433,38 @@ impl Game {
     }
 
     fn check_erase_row(&mut self) {
-        if self.erase_row_wait > 0 {
-            self.erase_row_wait -= 1;
-            if self.erase_row_wait == 0 {
-                let filled_rows = self.get_filled_rows();
-                // TODO: 消えた分を落下させる
-            }
-        } else {
-            let filled_rows = self.get_filled_rows();
-            if filled_rows.len() > 0 {
-                println!("Filled!");
-                for y in &filled_rows {
-                    for x in 1..11 {
-                        self.piles.pattern[*y][x] = 0;
-                    }
+        let filled_rows = self.get_filled_rows();
+        if filled_rows.len() > 0 {
+            // そろった行を空にする
+            for y in &filled_rows {
+                for x in 1..=(BOARD_X_MAX - 1) {
+                    self.piles.pattern[*y][x] = 0;
                 }
+            }
 
-                // 消えた分を落下させる
-                // println!("filled_rows = {:?}", filled_rows);
-                let filled_row_max = filled_rows[filled_rows.len() - 1];
-                for y in (0..=filled_row_max).rev() {
-                    if y >= filled_rows.len() {
-                        for x in 1..11 {
-                            self.piles.pattern[y][x] = self.piles.pattern[y - filled_rows.len()][x];
+            // 下に支えるブロック片がないブロック片を落下させる
+            for x in 1..=(BOARD_X_MAX - 1) {    // 各列に対して
+                for y in (BOARD_Y_MIN..=(BOARD_Y_MAX - 1)).rev() {  // 下から見ていく
+                    if self.piles.pattern[y][x] > 0 {  // ブロック片が存在するなら
+                        let mut below = y + 1;  // それより下でブロック片が存在するマスを探す
+                        while self.piles.pattern[below][x] == 0 {
+                            below += 1;
                         }
-                    } else {
-                        self.piles.pattern[y] = [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1];
+                        if below != y + 1 {
+                            self.piles.pattern[below - 1][x] = self.piles.pattern[y][x];    // ブロック片を下に移動
+                            self.piles.pattern[y][x] = 0;   // もとのマスを空にする
+                        }
                     }
                 }
-                self.erase_row_wait = 20;
             }
+            self.erase_row_wait = 20;
         }
     }
 
     fn get_filled_rows(&self) -> Vec<usize> {
         let mut result = Vec::<usize>::new();
         for y in BOARD_Y_MIN..=(BOARD_Y_MAX - 1) {
-            if (1..(BOARD_X_MAX - 1)).all(|x| self.piles.is_filled(x, y)) {
+            if (1..=(BOARD_X_MAX - 1)).all(|x| self.piles.is_filled(x, y)) {
                 result.push(y);
             }
         }
@@ -541,6 +536,70 @@ mod tests {
                 [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
                 [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
             ]
+        );
+    }
+
+    #[test]
+    fn test_check_erase_row2() {
+        let rng = rand::thread_rng();
+        let mut game = Game::new(rng);
+        game.piles.pattern = [
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        ];
+        println!("Before:");
+        for line in game.piles.pattern {
+            println!("{:?}", line);
+        }
+        game.check_erase_row();
+        println!("After:");
+        for line in game.piles.pattern {
+            println!("{:?}", line);
+        }
+        assert_eq!(
+            game.piles.pattern,
+            [
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1],
+                [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                ]
         );
     }
 }
