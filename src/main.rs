@@ -373,7 +373,9 @@ impl Game {
         if self.is_over {
             return
         }
-        if self.erase_row_wait <= 0 {
+        if self.erase_row_wait > 0 {
+            self.erase_row_wait -= 1;
+        } else {
             match command {
                 "right" => self.move_by_delta(1, 0),
                 "left" => self.move_by_delta(-1, 0),
@@ -391,8 +393,6 @@ impl Game {
                 }
             }
             self.check_erase_row();
-        } else {
-            self.erase_row_wait -= 1;
         }
 
         self.frame += 1;
