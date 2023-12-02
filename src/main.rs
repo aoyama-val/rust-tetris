@@ -343,6 +343,7 @@ struct Game {
     is_over: bool,
     frame: i32,
     erase_row_wait: i32,
+    settle_wait: u32,
     piles: Piles,
     block: Block,
     next_block: Block,
@@ -356,6 +357,7 @@ impl Game {
             is_over: false,
             frame: 0,
             erase_row_wait: 0,
+            settle_wait: 0,
             piles: Piles::new(),
             block: Block::new(),
             next_block: Block::new(),
@@ -365,6 +367,32 @@ impl Game {
         game.next_block = Block::create_randomly(&mut game.rng, game.block_created_count);
         game.block_created_count += 1;
 
+        game.piles = Piles {
+            pattern: [
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1],
+                [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1],
+                [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            ]
+        };
+
         game.spawn_block();
         game
     }
@@ -373,27 +401,32 @@ impl Game {
         if self.is_over {
             return
         }
-        if self.erase_row_wait > 0 {
-            self.erase_row_wait -= 1;
-        } else {
-            match command {
-                "right" => self.move_by_delta(1, 0),
-                "left" => self.move_by_delta(-1, 0),
-                "down" => self.move_by_delta(0, 1),
-                "rotate_left" => self.rotate(1),
-                "rotate_right" => self.rotate(-1),
-                _ => {}
-            }
 
-            if self.frame != 0 && self.frame % 20 == 0 {
-                self.move_by_delta(0, 1);
-                if self.is_collide(0, 0) {
-                    println!("Game over!");
-                    self.is_over = true;
-                }
+        if self.settle_wait > 0 {
+            self.settle_wait -= 1;
+            if self.settle_wait == 0 {
+                self.settle_block();
+                self.spawn_block();
             }
-            self.check_erase_row();
         }
+
+        match command {
+            "right" => self.move_by_delta(1, 0),
+            "left" => self.move_by_delta(-1, 0),
+            "down" => self.move_by_delta(0, 1),
+            "rotate_left" => self.rotate(1),
+            "rotate_right" => self.rotate(-1),
+            _ => {}
+        }
+
+        if self.frame != 0 && self.frame % 20 == 0 {
+            self.move_by_delta(0, 1);
+            if self.is_collide(0, 0) {
+                println!("Game over!");
+                self.is_over = true;
+            }
+        }
+        self.check_erase_row();
 
         self.frame += 1;
     }
@@ -421,8 +454,9 @@ impl Game {
 
         // 床に接触した
         if y_delta > 0 && self.is_collide(0, 1) {
-            self.settle_block();
-            self.spawn_block();
+            if self.settle_wait == 0 {
+                self.settle_wait = 15;
+            }
         }
     }
 
@@ -479,7 +513,7 @@ impl Game {
                     }
                 }
             }
-            self.erase_row_wait = 20;
+            // self.erase_row_wait = 20;
 
             println!("After:");
             print_pattern(self.piles.pattern);
