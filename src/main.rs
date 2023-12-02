@@ -110,12 +110,7 @@ fn render(canvas: &mut Canvas<Window>, game: &Game) -> Result<(), String> {
 }
 
 fn render_block(canvas: &mut Canvas<Window>, block: &Block, x_in_cell: i32, y_in_cell: i32) -> Result<(), String> {
-    let block_color = match block.color {
-        0 => Color::RGB(255, 128, 128),
-        1 => Color::RGB(128, 255, 128),
-        2 => Color::RGB(128, 128, 255),
-        _ => Color::RGB(255, 255, 255),
-    };
+    let block_color = get_color(block.color + 2);
     canvas.set_draw_color(block_color);
     let pattern = block.get_pattern();
     for j in 0..pattern.len() {
