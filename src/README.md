@@ -10,6 +10,7 @@
 - [x] 次のブロックが出現するように
 - [x] そろった行の判定
 - [x] そろった行を消す
+- [ ] check_erase_rowだけテストを書く。スライスのコピーが使えるならリファクタする clone_from_slice() https://stackoverflow.com/questions/28219231/how-to-idiomatically-copy-a-slice
 - [ ] 堆積物をカラー化
   - PilesにColor属性を追加。0: 背景色, 1~3: ブロックカラー
 - [ ] 堆積物に引っかかった場合、回転できないように
