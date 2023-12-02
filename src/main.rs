@@ -7,7 +7,7 @@ use sdl2::video::Window;
 use std::time::Duration;
 
 mod model;
-use model::*;
+use crate::model::*;
 
 const SCREEN_WIDTH: u32 = 640;
 const SCREEN_HEIGHT: u32 = 420;
