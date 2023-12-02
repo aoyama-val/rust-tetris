@@ -7,7 +7,7 @@ use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
 use sdl2::rect::Rect;
-use sdl2::render::Canvas;
+use sdl2::render::{Canvas, BlendMode};
 use sdl2::video::Window;
 use std::time::Duration;
 
@@ -27,6 +27,7 @@ pub fn main() -> Result<(), String> {
         .build()
         .map_err(|e| e.to_string())?;
     let mut canvas = window.into_canvas().build().map_err(|e| e.to_string())?;
+    canvas.set_blend_mode(BlendMode::Blend);
     let mut event_pump = sdl_context.event_pump()?;
 
     let rng = rand::thread_rng();
@@ -88,6 +89,11 @@ fn render(canvas: &mut Canvas<Window>, game: &Game) -> Result<(), String> {
 
     // render next block
     render_block(canvas, &game.next_block, 21, 0)?;
+
+    if game.is_over {
+        canvas.set_draw_color(Color::RGBA(0, 0, 0, 128));
+        canvas.fill_rect(Rect::new(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT))?;
+    }
 
     canvas.present();
 
@@ -320,23 +326,25 @@ impl Piles {
 
 // ゲームのモデル。SDLに依存しない。
 struct Game {
-    block: Block,
-    next_block: Block,
-    piles: Piles,
     rng: ThreadRng,
+    is_over: bool,
     frame: i32,
     erase_row_wait: i32,
+    piles: Piles,
+    block: Block,
+    next_block: Block,
 }
 
 impl Game {
     fn new(rng: ThreadRng) -> Game {
         let mut game = Game {
-            block: Block::new(),
-            next_block: Block::new(),
-            piles: Piles::new(),
             rng: rng,
+            is_over: false,
             frame: 0,
             erase_row_wait: 0,
+            piles: Piles::new(),
+            block: Block::new(),
+            next_block: Block::new(),
         };
         game.piles.setup_wall_and_floor();
         game.next_block = Block::create_randomly(&mut game.rng);
@@ -345,6 +353,9 @@ impl Game {
     }
 
     fn update(&mut self, command: &str) {
+        if self.is_over {
+            return
+        }
         if self.erase_row_wait <= 0 {
             match command {
                 "right" => self.move_by_delta(1, 0),
@@ -357,6 +368,10 @@ impl Game {
 
             if self.frame != 0 && self.frame % 20 == 0 {
                 self.move_by_delta(0, 1);
+                if self.is_collide(0, 0) {
+                    println!("Game over!");
+                    self.is_over = true;
+                }
             }
         }
 
@@ -382,18 +397,14 @@ impl Game {
     }
 
     fn move_by_delta(&mut self, x_delta: i32, y_delta: i32) {
-        if self.is_collide(x_delta, y_delta) {
-            return;
+        if !self.is_collide(x_delta, y_delta) {
+            self.block.move_by_delta(x_delta, y_delta);
         }
-        self.block.move_by_delta(x_delta, y_delta);
 
         // 床に接触した
         if y_delta > 0 && self.is_collide(0, 1) {
             self.settle_block();
             self.spawn_block();
-            if self.is_collide(0, 0) {
-                println!("Game over!");
-            }
         }
     }
 
