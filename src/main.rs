@@ -454,6 +454,9 @@ impl Game {
     fn check_erase_row(&mut self) {
         let filled_rows = self.get_filled_rows();
         if filled_rows.len() > 0 {
+            println!("Before:");
+            print_pattern(self.piles.pattern);
+
             // そろった行を空にする
             for y in &filled_rows {
                 for x in 1..=(BOARD_X_MAX - 1) {
@@ -477,6 +480,9 @@ impl Game {
                 }
             }
             self.erase_row_wait = 20;
+
+            println!("After:");
+            print_pattern(self.piles.pattern);
         }
     }
 
@@ -522,13 +528,9 @@ mod tests {
             [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
             [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
         ];
-        println!("Before:");
-        print_pattern(game.piles.pattern);
 
         game.check_erase_row();
 
-        println!("After:");
-        print_pattern(game.piles.pattern);
         assert_eq!(
             game.piles.pattern,
             [
@@ -585,13 +587,9 @@ mod tests {
             [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
             [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
         ];
-        println!("Before:");
-        print_pattern(game.piles.pattern);
 
         game.check_erase_row();
 
-        println!("After:");
-        print_pattern(game.piles.pattern);
         assert_eq!(
             game.piles.pattern,
             [
@@ -647,15 +645,10 @@ mod tests {
             [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
             [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
             [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-        ]
-;
-        println!("Before:");
-        print_pattern(game.piles.pattern);
+        ];
 
         game.check_erase_row();
 
-        println!("After:");
-        print_pattern(game.piles.pattern);
         assert_eq!(
             game.piles.pattern,
             [
