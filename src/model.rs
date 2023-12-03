@@ -1,4 +1,3 @@
-use rand;
 use rand::prelude::*;
 use std::fs::File;
 use std::io::Read;
@@ -390,7 +389,7 @@ impl Game {
     }
 
     fn spawn_block(&mut self) {
-        self.block = self.next_block.clone();
+        self.block = self.next_block;
         self.next_block = Block::create_randomly(&mut self.rng, self.block_created_count);
         self.block_created_count += 1;
     }
@@ -398,8 +397,8 @@ impl Game {
     fn check_erase_row(&mut self) {
         let filled_rows = self.get_filled_rows();
         if filled_rows.len() > 0 {
-            println!("Before:");
-            print_pattern(self.piles.pattern);
+            // println!("Before:");
+            // print_pattern(self.piles.pattern);
 
             // そろった行を消す
             let max_filled_row = filled_rows[filled_rows.len() - 1];
@@ -414,8 +413,8 @@ impl Game {
                 }
             }
 
-            println!("After:");
-            print_pattern(self.piles.pattern);
+            // println!("After:");
+            // print_pattern(self.piles.pattern);
         }
     }
 

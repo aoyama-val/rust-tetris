@@ -2,7 +2,7 @@ use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
 use sdl2::rect::Rect;
-use sdl2::render::{Canvas, BlendMode};
+use sdl2::render::{BlendMode, Canvas};
 use sdl2::video::Window;
 use std::time::Duration;
 
@@ -74,7 +74,7 @@ fn render(canvas: &mut Canvas<Window>, game: &Game) -> Result<(), String> {
             if game.piles.pattern[i][j] >= 1 {
                 let color = get_color(game.piles.pattern[i][j]);
                 canvas.set_draw_color(color);
-                let x: i32 = (LEFT_WALL_X + j as i32) as i32 * CELL_SIZE_PX as i32;
+                let x: i32 = (LEFT_WALL_X + j as i32) * CELL_SIZE_PX as i32;
                 let y: i32 = i as i32 * CELL_SIZE_PX as i32;
                 canvas.fill_rect(Rect::new(x, y, CELL_SIZE_PX, CELL_SIZE_PX))?;
             }
@@ -82,7 +82,12 @@ fn render(canvas: &mut Canvas<Window>, game: &Game) -> Result<(), String> {
     }
 
     // render block
-    render_block(canvas, &game.block, LEFT_WALL_X + game.block.x, game.block.y)?;
+    render_block(
+        canvas,
+        &game.block,
+        LEFT_WALL_X + game.block.x,
+        game.block.y,
+    )?;
 
     // render next block
     render_block(canvas, &game.next_block, 21, 0)?;
@@ -97,7 +102,12 @@ fn render(canvas: &mut Canvas<Window>, game: &Game) -> Result<(), String> {
     Ok(())
 }
 
-fn render_block(canvas: &mut Canvas<Window>, block: &Block, x_in_cell: i32, y_in_cell: i32) -> Result<(), String> {
+fn render_block(
+    canvas: &mut Canvas<Window>,
+    block: &Block,
+    x_in_cell: i32,
+    y_in_cell: i32,
+) -> Result<(), String> {
     let block_color = get_color(block.color + 2);
     canvas.set_draw_color(block_color);
     let pattern = block.get_pattern();
