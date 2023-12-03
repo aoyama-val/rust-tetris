@@ -1,5 +1,7 @@
 # Rust Tetris
 
+![スクリーンショット 2023-12-03 19 46 56](https://github.com/aoyama-val/rust-tetris/assets/13144822/138bea07-4b2d-46f7-bd99-c78d42e1555f)
+
 ## TODO
 
 - [x] ランダムにブロックを生成する
