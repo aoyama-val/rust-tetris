@@ -133,13 +133,7 @@ impl Block {
         for _ in 0..self.rot {
             result = Self::rotate_pattern(result);
         }
-        match self.rot {
-            0 => result,
-            1 => result,
-            2 => result,
-            3 => result,
-            _ => panic!(),
-        }
+        result
     }
 
     fn rotate_pattern(base: Pattern) -> Pattern {
