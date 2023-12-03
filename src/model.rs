@@ -314,8 +314,11 @@ impl Game {
         if self.settle_wait > 0 {
             self.settle_wait -= 1;
             if self.settle_wait == 0 {
-                self.settle_block();
-                self.spawn_block();
+                // 床に接触した
+                if self.is_collide(0, 1) {
+                    self.settle_block();
+                    self.spawn_block();
+                }
             }
         }
 
@@ -333,6 +336,8 @@ impl Game {
             if self.is_collide(0, 0) {
                 println!("Game over!");
                 self.is_over = true;
+            } else {
+                self.settle_wait = 15;
             }
         }
         self.check_erase_row();
@@ -359,13 +364,6 @@ impl Game {
     fn move_by_delta(&mut self, x_delta: i32, y_delta: i32) {
         if !self.is_collide(x_delta, y_delta) {
             self.block.move_by_delta(x_delta, y_delta);
-        }
-
-        // 床に接触した
-        if y_delta > 0 && self.is_collide(0, 1) {
-            if self.settle_wait == 0 {
-                self.settle_wait = 15;
-            }
         }
     }
 
