@@ -16,7 +16,7 @@ pub const LEFT_WALL_X: i32 = 6;
 
 pub type Pattern = [[u8; 5]; 5];
 
-fn print_pattern<const W: usize, const H: usize, T: std::fmt::Debug>(pattern: [[T;W];H]) {
+fn print_pattern<const W: usize, const H: usize, T: std::fmt::Debug>(pattern: [[T; W]; H]) {
     for line in pattern {
         println!("{:?}", line);
     }
@@ -220,7 +220,10 @@ pub struct Game {
 impl Game {
     pub fn new() -> Game {
         let now = time::SystemTime::now();
-        let timestamp = now.duration_since(time::UNIX_EPOCH).expect("SystemTime before UNIX EPOCH!").as_secs();
+        let timestamp = now
+            .duration_since(time::UNIX_EPOCH)
+            .expect("SystemTime before UNIX EPOCH!")
+            .as_secs();
         let rng = StdRng::seed_from_u64(timestamp);
 
         let mut game = Game {
@@ -260,7 +263,7 @@ impl Game {
                 [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
                 [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
                 [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-            ]
+            ],
         };
 
         game.spawn_block();
@@ -278,7 +281,7 @@ impl Game {
         f.read_to_string(&mut content).unwrap();
 
         let parsed = content.parse::<Table>().unwrap();
-        if let Some(value)= parsed.get("seed") {
+        if let Some(value) = parsed.get("seed") {
             if let Some(seed) = value.as_integer() {
                 println!("seed = {}", seed);
                 let rng = StdRng::seed_from_u64(seed as u64);
@@ -286,9 +289,11 @@ impl Game {
             }
         }
 
-        if let Some(value)= parsed.get("pattern") {
+        if let Some(value) = parsed.get("pattern") {
             if let Some(pattern) = value.as_str() {
-                let mut p:Piles = Piles { pattern: [[0; BOARD_X_LEN]; BOARD_Y_LEN] };
+                let mut p: Piles = Piles {
+                    pattern: [[0; BOARD_X_LEN]; BOARD_Y_LEN],
+                };
                 for (i, line) in pattern.lines().enumerate() {
                     for (j, col) in line.split_ascii_whitespace().enumerate() {
                         p.pattern[i][j] = col.parse::<u8>().unwrap();
@@ -304,7 +309,7 @@ impl Game {
 
     pub fn update(&mut self, command: &str) {
         if self.is_over {
-            return
+            return;
         }
 
         if self.settle_wait > 0 {
@@ -371,7 +376,7 @@ impl Game {
                 let block_pattern = self.block.get_pattern();
                 if block_pattern[i][j] == 1 {
                     self.piles.pattern[(self.block.y + i as i32) as usize]
-                        [(self.block.x + j as i32) as usize] = 2  +self.block.color;
+                        [(self.block.x + j as i32) as usize] = 2 + self.block.color;
                 }
             }
         }
@@ -396,25 +401,15 @@ impl Game {
             println!("Before:");
             print_pattern(self.piles.pattern);
 
-            // そろった行を空にする
-            for y in &filled_rows {
+            // そろった行を消す
+            let max_filled_row = filled_rows[filled_rows.len() - 1];
+            for y in (0..=max_filled_row).rev() {
                 for x in 1..=(BOARD_X_MAX - 1) {
-                    self.piles.pattern[*y][x] = 0;
-                }
-            }
-
-            // 下に支えるブロック片がないブロック片を落下させる
-            for x in 1..=(BOARD_X_MAX - 1) {    // 各列に対して
-                for y in (BOARD_Y_MIN..=(BOARD_Y_MAX - 1)).rev() {  // 下から見ていく
-                    if self.piles.pattern[y][x] > 0 {  // ブロック片が存在するなら
-                        let mut below = y + 1;  // それより下でブロック片が存在するマスを探す
-                        while below < BOARD_Y_MAX && self.piles.pattern[below][x] == 0 {
-                            below += 1;
-                        }
-                        if below != y + 1 {
-                            self.piles.pattern[below - 1][x] = self.piles.pattern[y][x];    // ブロック片を下に移動
-                            self.piles.pattern[y][x] = 0;   // もとのマスを空にする
-                        }
+                    let above = y as i32 - filled_rows.len() as i32;
+                    if above >= 0 {
+                        self.piles.pattern[y][x] = self.piles.pattern[above as usize][x];
+                    } else {
+                        self.piles.pattern[y][x] = 0;
                     }
                 }
             }
@@ -446,24 +441,24 @@ mod tests {
         game.piles.pattern = [
             [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
             [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
             [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
             [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1],
             [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
         ];
 
@@ -490,8 +485,8 @@ mod tests {
                 [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
                 [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
                 [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
                 [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1],
                 [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
             ]
         );
@@ -550,64 +545,6 @@ mod tests {
                 [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
                 [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
                 [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-                [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-                ]
-        );
-    }
-
-    //
-    #[test]
-    fn test_check_erase_row3() {
-        let mut game = Game::new();
-        game.piles.pattern = [
-            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-            [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-            [1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-        ];
-
-        game.check_erase_row();
-
-        assert_eq!(
-            game.piles.pattern,
-            [
-                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-                [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-                [1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1],
                 [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
             ]
         );
