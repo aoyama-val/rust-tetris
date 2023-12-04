@@ -29,6 +29,7 @@ pub fn main() -> Result<(), String> {
 
     let mut game = Game::new();
     game.load_config();
+    game.init_randomly();
 
     'running: loop {
         let mut command = "";

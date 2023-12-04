@@ -230,11 +230,13 @@ impl Game {
             block_created_count: 0,
         };
         game.piles.setup_wall_and_floor();
-        game.next_block = Block::create_randomly(&mut game.rng, game.block_created_count);
-        game.block_created_count += 1;
-
-        game.spawn_block();
         game
+    }
+
+    pub fn init_randomly(&mut self) {
+        for _ in 0..=2 {
+            self.spawn_block()
+        }
     }
 
     pub fn load_config(&mut self) {
