@@ -13,7 +13,8 @@ pub const BOARD_Y_MIN: usize = 0;
 pub const BOARD_Y_MAX: usize = BOARD_Y_LEN - 1;
 pub const LEFT_WALL_X: i32 = 6;
 
-pub type Pattern = [[u8; 5]; 5];
+pub const PATTERN_SIZE: usize = 5;
+pub type Pattern = [[u8; PATTERN_SIZE]; PATTERN_SIZE];
 
 fn print_pattern<const W: usize, const H: usize, T: std::fmt::Debug>(pattern: [[T; W]; H]) {
     for line in pattern {
@@ -21,8 +22,9 @@ fn print_pattern<const W: usize, const H: usize, T: std::fmt::Debug>(pattern: [[
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Default, Clone, Copy)]
 pub enum Shape {
+    #[default]
     S0 = 0,
     S1,
     S2,
@@ -108,7 +110,7 @@ impl Shape {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Default, Clone, Copy)]
 pub struct Block {
     pub x: i32,
     pub y: i32,
@@ -118,13 +120,7 @@ pub struct Block {
 }
 impl Block {
     fn new() -> Block {
-        Block {
-            x: 0,
-            y: 0,
-            shape: Shape::S0,
-            rot: 0,
-            color: 0,
-        }
+        Block::default()
     }
 
     pub fn get_pattern(&self) -> Pattern {
@@ -137,10 +133,10 @@ impl Block {
     }
 
     fn rotate_pattern(base: Pattern) -> Pattern {
-        let mut result: Pattern = [[0; 5]; 5];
-        for i in 0..5 {
-            for j in 0..5 {
-                result[4 - j][i] = base[i][j];
+        let mut result: Pattern = [[0; PATTERN_SIZE]; PATTERN_SIZE];
+        for i in 0..PATTERN_SIZE {
+            for j in 0..PATTERN_SIZE {
+                result[PATTERN_SIZE - 1 - j][i] = base[i][j];
             }
         }
         result
@@ -172,15 +168,14 @@ impl Block {
 
 // 壁と床を含めた堆積物を表す構造体
 // 壁と床は別にした方が良かったかも
+#[derive(Default)]
 pub struct Piles {
     pub pattern: [[u8; BOARD_X_LEN]; BOARD_Y_LEN], // 0:なし 1:壁or床 2〜:ブロック残骸
 }
 
 impl Piles {
     fn new() -> Piles {
-        Piles {
-            pattern: [[0; BOARD_X_LEN]; BOARD_Y_LEN],
-        }
+        Piles::default()
     }
 
     fn setup_wall_and_floor(&mut self) {
@@ -308,8 +303,8 @@ impl Game {
 
     fn is_collide(&mut self, x_delta: i32, y_delta: i32) -> bool {
         let pattern = self.block.get_pattern();
-        for i in 0..5 {
-            for j in 0..5 {
+        for i in 0..PATTERN_SIZE {
+            for j in 0..PATTERN_SIZE {
                 if pattern[i][j] != 0 {
                     let new_x = self.block.x + j as i32 + x_delta;
                     let new_y = self.block.y + i as i32 + y_delta;
@@ -330,8 +325,8 @@ impl Game {
 
     fn settle_block(&mut self) {
         let block_pattern = self.block.get_pattern();
-        for i in 0..5 {
-            for j in 0..5 {
+        for i in 0..PATTERN_SIZE {
+            for j in 0..PATTERN_SIZE {
                 if block_pattern[i][j] == 1 {
                     self.piles.pattern[(self.block.y + i as i32) as usize]
                         [(self.block.x + j as i32) as usize] = 2 + self.block.color;
