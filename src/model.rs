@@ -329,9 +329,9 @@ impl Game {
     }
 
     fn settle_block(&mut self) {
+        let block_pattern = self.block.get_pattern();
         for i in 0..5 {
             for j in 0..5 {
-                let block_pattern = self.block.get_pattern();
                 if block_pattern[i][j] == 1 {
                     self.piles.pattern[(self.block.y + i as i32) as usize]
                         [(self.block.x + j as i32) as usize] = 2 + self.block.color;
