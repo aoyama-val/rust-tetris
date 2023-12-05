@@ -203,7 +203,6 @@ pub struct Game {
     pub rng: StdRng,
     pub is_over: bool,
     pub frame: i32,
-    pub settle_wait: u32,
     pub piles: Piles,
     pub block: Block,
     pub next_block: Block,
@@ -223,7 +222,6 @@ impl Game {
             rng: rng,
             is_over: false,
             frame: 0,
-            settle_wait: 0,
             piles: Piles::new(),
             block: Block::new(),
             next_block: Block::new(),
@@ -281,17 +279,6 @@ impl Game {
             return;
         }
 
-        if self.settle_wait > 0 {
-            self.settle_wait -= 1;
-            if self.settle_wait == 0 {
-                // 床に接触した
-                if self.is_collide(0, 1) {
-                    self.settle_block();
-                    self.spawn_block();
-                }
-            }
-        }
-
         match command {
             "right" => self.move_by_delta(1, 0),
             "left" => self.move_by_delta(-1, 0),
@@ -302,15 +289,19 @@ impl Game {
         }
 
         if self.frame != 0 && self.frame % 20 == 0 {
-            self.move_by_delta(0, 1);
-            if self.is_collide(0, 0) {
-                println!("Game over!");
-                self.is_over = true;
+            if self.is_collide(0, 1) {
+                // すでに床に接触しているなら固定
+                self.settle_block();
+                self.check_erase_row();
+                self.spawn_block();
+                if self.is_collide(0, 0) {
+                    self.is_over = true;
+                    println!("Game over!");
+                }
             } else {
-                self.settle_wait = 15;
+                self.move_by_delta(0, 1);
             }
         }
-        self.check_erase_row();
 
         self.frame += 1;
     }
@@ -368,7 +359,7 @@ impl Game {
             // println!("Before:");
             // print_pattern(self.piles.pattern);
 
-            // そろった行を消す
+            // そろった行を消して上にあるブロックを落とす
             let max_filled_row = filled_rows[filled_rows.len() - 1];
             for y in (0..=max_filled_row).rev() {
                 for x in 1..=(BOARD_X_MAX - 1) {
