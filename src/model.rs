@@ -237,9 +237,8 @@ impl Game {
 
     pub fn load_config(&mut self) {
         let filename = "tetris.toml";
-        let content = match std::fs::read_to_string(filename) {
-            Ok(content) => content,
-            Err(_) => return,
+        let Ok(content) = std::fs::read_to_string(filename) else {
+            return;
         };
 
         let parsed = content.parse::<Table>().expect("Failed to parse toml");
