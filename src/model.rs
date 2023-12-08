@@ -1,6 +1,4 @@
 use rand::prelude::*;
-use std::fs::File;
-use std::io::Read;
 use std::time;
 use toml::Table;
 
@@ -234,15 +232,12 @@ impl Game {
 
     pub fn load_config(&mut self) {
         let filename = "tetris.toml";
-        let mut f = match File::open(filename) {
-            Ok(f) => f,
+        let content = match std::fs::read_to_string(filename) {
+            Ok(content) => content,
             Err(_) => return,
         };
 
-        let mut content = String::new();
-        f.read_to_string(&mut content).unwrap();
-
-        let parsed = content.parse::<Table>().unwrap();
+        let parsed = content.parse::<Table>().expect("Failed to parse toml");
         if let Some(value) = parsed.get("seed") {
             if let Some(seed) = value.as_integer() {
                 println!("seed = {}", seed);
@@ -258,7 +253,7 @@ impl Game {
                 };
                 for (i, line) in pattern.lines().enumerate() {
                     for (j, col) in line.split_ascii_whitespace().enumerate() {
-                        p.pattern[i][j] = col.parse::<u8>().unwrap();
+                        p.pattern[i][j] = col.parse::<u8>().expect("Failed to parse number");
                     }
                     // println!("line = [{}]", line);
                 }
